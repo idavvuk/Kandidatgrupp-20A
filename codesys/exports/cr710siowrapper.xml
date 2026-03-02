@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-02T11:24:46.8634758" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-02T11:23:55.9826386" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-02T12:10:14.7974404" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-02T12:09:57.2301459" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1347,32 +1347,79 @@
             </addData>
           </task>
           <addData>
+            <data name="http://www.3s-software.com/plcopenxml/datatype" handleUnknown="implementation">
+              <dataType name="Enum1">
+                <baseType>
+                  <enum>
+                    <values>
+                      <value name="X" />
+                      <value name="A" />
+                      <value name="B" />
+                    </values>
+                  </enum>
+                </baseType>
+                <addData>
+                  <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
+                    <Attributes>
+                      <Attribute Name="qualified_only" Value="" />
+                      <Attribute Name="strict" Value="" />
+                    </Attributes>
+                  </data>
+                  <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+                    <ObjectId>b0f5250c-ab0a-4ee0-8ea3-eb68a42dfe8b</ObjectId>
+                  </data>
+                </addData>
+              </dataType>
+            </data>
             <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
-              <pou name="PLC_PRG">
+              <pou name="PLC_PRG" pouType="program">
                 <interface>
-                  <localVars constant="true">
-                    <variable name="A">
+                  <localVars>
+                    <variable name="ReqA">
                       <type>
-                        <derived name="STATION" />
+                        <BOOL />
                       </type>
                     </variable>
-                    <variable name="B">
+                    <variable name="ReqB">
                       <type>
-                        <derived name="STATION" />
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="Active">
+                      <type>
+                        <derived name="Enum1" />
+                      </type>
+                    </variable>
+                    <variable name="GrantedA">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="GrantedB">
+                      <type>
+                        <BOOL />
                       </type>
                     </variable>
                   </localVars>
                 </interface>
                 <body>
                   <ST>
-                    <xhtml xmlns="http://www.w3.org/1999/xhtml">CR710S_Config(); 			//IO Configuration
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">//CR710S_Config(); 			//IO Configuration
 
-IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
+//IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
 
 							//Put your Application program here 
 
-IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
+//IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
 
+IF ReqA AND NOT ReqB THEN 
+	Active := Enum1.A; 
+	ELSIF ReqB AND NOT ReqA THEN
+	Active := Enum1.B;
+END_IF
+
+GrantedA := (Active = Enum1.A); 
+GrantedB := (Active = Enum1.B); 
 </xhtml>
                   </ST>
                 </body>
@@ -2813,6 +2860,7 @@ config_outgroups();
               <Object Name="config_outgroups" ObjectId="3a27c8bc-c9c8-4536-96db-b44cca192ab7" />
               <Object Name="config_outputs" ObjectId="258c4e0b-bfa2-4c99-8464-f5af38d0fed3" />
             </Object>
+            <Object Name="Enum1" ObjectId="b0f5250c-ab0a-4ee0-8ea3-eb68a42dfe8b" />
           </Object>
         </Object>
       </ProjectStructure>
