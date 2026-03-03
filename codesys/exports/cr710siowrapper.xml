@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-03T12:02:23.8339503" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-03T12:01:38.7187877" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-03-03T12:39:14.5273843" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-03T12:38:37.8718652" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1419,8 +1419,37 @@
                       <type>
                         <BOOL />
                       </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml"> Request takeover</xhtml>
+                      </documentation>
                     </variable>
                     <variable name="ReqRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RelManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml"> Release control</xhtml>
+                      </documentation>
+                    </variable>
+                    <variable name="RelRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="AckManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Acknowledge ready</xhtml>
+                      </documentation>
+                    </variable>
+                    <variable name="AckRemote">
                       <type>
                         <BOOL />
                       </type>
@@ -1438,32 +1467,17 @@
                         <simpleValue value="EStation.Manual" />
                       </initialValue>
                     </variable>
+                    <variable name="Pending">
+                      <type>
+                        <derived name="EStation" />
+                      </type>
+                    </variable>
                     <variable name="Released">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
                     <variable name="PendingReady">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="RelManual">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="RelRemote">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="AckManual">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="AckRemote">
                       <type>
                         <BOOL />
                       </type>
@@ -1480,15 +1494,13 @@
                       <type>
                         <BOOL />
                       </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Granted</xhtml>
+                      </documentation>
                     </variable>
                     <variable name="GrantedRemote">
                       <type>
                         <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="Pending">
-                      <type>
-                        <derived name="EStation" />
                       </type>
                     </variable>
                     <variable name="Lamp_RequestManual">
@@ -1536,6 +1548,16 @@
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="HeartBeat_Remote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="HeartBeat_Manual">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -1551,35 +1573,28 @@ CASE State OF
 	EStates.Stable: 
 		Pending := EStation.None; //No takeover in progress
 
-		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EStation.Manual THEN 
+		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EStation.Manual AND HeartBeat_Manual THEN 
 			Pending := Estation.Manual;
 			State := EStates.PendingAck;
-	//Active := EStation.Manual; 
-			ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EStation.Remote THEN
+
+			ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EStation.Remote AND HeartBeat_Remote THEN
 				Pending := EStation.Remote;
 				State := EStates.PendingAck;
-	//Active := EStation.Remote;
 		END_IF
 	EStates.PendingAck: 
-		//GrantedManual := (Pending = EStation.Manual);
-		//GrantedRemote := (Pending = EStation.Remote); 
-		
-		
-		IF (GrantedManual AND NOT ReqManual) OR (GrantedRemote AND NOT ReqRemote) THEN 
+				
+		IF (GrantedManual AND (NOT ReqManual OR NOT HeartBeat_Manual)) OR (GrantedRemote AND (NOT ReqRemote OR NOT HeartBeat_Remote)) THEN 
 			Pending := EStation.None; 
 			State := EStates.Stable; 
-			//ELSIF (GrantedManual AND AckManual) OR (GrantedRemote AND AckRemote) THEN 
-				//Active := Pending;
-				//Pending := EStation.None;
-				//State := EStates.Stable;  
+  
 			ELSE
-		//Has the current active station released control?
+				//Has the current active station released control?
 				Released := (Active = EStation.Manual AND RelManual) OR (Active = EStation.Remote AND RelRemote);
 		
-		// Is the new Pending station ready to take control?
+				// Is the new Pending station ready to take control?
 				PendingReady := (Pending = EStation.Manual AND AckManual) OR (Pending = EStation.Remote AND AckRemote);
 		
-		// Switch only when both are true
+				// Switch only when both are true
 				IF Released AND PendingReady THEN
 					Active := Pending; 
 					Pending := EStation.None;
@@ -1591,11 +1606,6 @@ CASE State OF
 		END_IF
 		
 END_CASE
-
-
-//AckManual := ReqManual; 
-//AckRemote := ReqRemote; 
-
 
 GrantedManual := (Pending = EStation.Manual); 
 GrantedRemote := (Pending = EStation.Remote); 
@@ -1820,7 +1830,7 @@ config_outgroups();
                 <DeviceIdentification>
                   <Type>4097</Type>
                   <Id>0000 0002</Id>
-                  <Version>3.5.11.50</Version>
+                  <Version>3.5.11.60</Version>
                 </DeviceIdentification>
                 <Connector moduleType="40000" interface="ifm:SystemR360III" connectorId="1">
                   <HostParameterSet />
@@ -3013,9 +3023,31 @@ config_outgroups();
     </configurations>
   </instances>
   <addData>
+    <data name="http://www.3s-software.com/plcopenxml/libraries" handleUnknown="implementation">
+      <Libraries>
+        <Library Name="#System_VisuElems" Namespace="VisuElems" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElems, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemMeter" Namespace="VisuElemMeter" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemMeter, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsSpecialControls" Namespace="VisuElemsSpecialControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsSpecialControls, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsWinControls" Namespace="VisuElemsWinControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsWinControls, 3.5.11.20 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemTextEditor" Namespace="VisuElemTextEditor" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTextEditor, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemTrace" Namespace="VisuElemTrace" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTrace, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuNativeControl" Namespace="VisuNativeControl" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuNativeControl, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsAlarm" Namespace="VisuElemsAlarm" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsAlarm, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemCamDisplayer" Namespace="VisuElemCamDisplayer" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemCamDisplayer, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElem3DPath" Namespace="VisuElem3DPath" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElem3DPath, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsDateTime" Namespace="VisuElemsDateTime" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsDateTime, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#system_visuinputs" Namespace="visuinputs" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="visuinputs, 3.5.10.0 (system)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>c2bac552-9807-4914-8bf7-a2144fae23d0</ObjectId>
+          </data>
+        </addData>
+      </Libraries>
+    </data>
     <data name="http://www.3s-software.com/plcopenxml/projectstructure" handleUnknown="discard">
       <ProjectStructure>
         <Object Name="CR710S" ObjectId="8a4045b1-25d3-40ed-a775-5d66b77f864d" />
+        <Object Name="Library Manager" ObjectId="c2bac552-9807-4914-8bf7-a2144fae23d0" />
         <Object Name="SafetyPLC" ObjectId="74f8a2c6-887a-412a-b40b-5e4f58755393">
           <Object Name="Communication" ObjectId="8eae2e73-2e8d-4ac9-b1fb-3499e322d2ff">
             <Object Name="CAN" ObjectId="cd6dba6a-8f1c-4690-a8c5-d085ec03d8a2" />
