@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-03T09:53:22.2437331" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-03T09:52:02.5537019" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-03-03T10:56:44.2374774" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-03T10:55:56.9785954" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1438,6 +1438,26 @@
                         <simpleValue value="EStation.Manual" />
                       </initialValue>
                     </variable>
+                    <variable name="Released">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="PendingReady">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RelManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RelRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="AckManual">
                       <type>
                         <BOOL />
@@ -1496,6 +1516,26 @@
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="Lamp_ActiveManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="Lamp_ActiveRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="Lamp_Released">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="Lamp_PendingReady">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -1509,27 +1549,43 @@
 //IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
 CASE State OF 
 	EStates.Stable: 
-		IF ReqManual AND NOT ReqRemote THEN 
+		Pending := EStation.None; //No takeover in progress
+
+		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EStation.Manual THEN 
 			Pending := Estation.Manual;
 			State := EStates.PendingAck;
 	//Active := EStation.Manual; 
-			ELSIF ReqRemote AND NOT ReqManual THEN
+			ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EStation.Remote THEN
 				Pending := EStation.Remote;
 				State := EStates.PendingAck;
 	//Active := EStation.Remote;
 		END_IF
 	EStates.PendingAck: 
-		GrantedManual := (Pending = EStation.Manual);
-		GrantedRemote := (Pending = EStation.Remote); 
+		//GrantedManual := (Pending = EStation.Manual);
+		//GrantedRemote := (Pending = EStation.Remote); 
 		
 		IF (GrantedManual AND NOT ReqManual) OR (GrantedRemote AND NOT ReqRemote) THEN 
 			Pending := EStation.None; 
 			State := EStates.Stable; 
-			ELSIF (GrantedManual AND AckManual) OR (GrantedRemote AND AckRemote) THEN 
-				Active := Pending;
+			//ELSIF (GrantedManual AND AckManual) OR (GrantedRemote AND AckRemote) THEN 
+				//Active := Pending;
+				//Pending := EStation.None;
+				//State := EStates.Stable;  
+		//Has the current active station released control?
+		Released := (Active = EStation.Manual AND RelManual) OR (Active = EStation.Remote AND RelRemote);
+		
+		// Is the new Pending station ready to take control?
+		PendingReady := (Pending = EStation.Manual AND AckManual) OR (Pending = EStation.Remote AND AckRemote);
+		
+		// Switch only when both are true
+			IF Released AND PendingReady THEN
+				Active := Pending; 
 				Pending := EStation.None;
-				State := EStates.Stable;  
+				State := EStates.Stable;
+			END_IF
 		END_IF
+		
+		
 		
 		
 END_CASE
@@ -1550,6 +1606,13 @@ Lamp_GrantedManual := GrantedManual;
 Lamp_GrantedRemote := GrantedRemote;
 
 Lamp_Pending := (State = EStates.PendingAck); 
+
+Lamp_ActiveManual := (Active = EStation.Manual);
+Lamp_ActiveRemote := (Active = EStation.Remote);
+
+Lamp_Released := Released;
+Lamp_PendingReady := PendingReady;
+
   
 
 
@@ -1755,7 +1818,7 @@ config_outgroups();
                 <DeviceIdentification>
                   <Type>4097</Type>
                   <Id>0000 0002</Id>
-                  <Version>3.5.11.50</Version>
+                  <Version>3.5.11.60</Version>
                 </DeviceIdentification>
                 <Connector moduleType="40000" interface="ifm:SystemR360III" connectorId="1">
                   <HostParameterSet />
@@ -2948,9 +3011,31 @@ config_outgroups();
     </configurations>
   </instances>
   <addData>
+    <data name="http://www.3s-software.com/plcopenxml/libraries" handleUnknown="implementation">
+      <Libraries>
+        <Library Name="#System_VisuElems" Namespace="VisuElems" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElems, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemMeter" Namespace="VisuElemMeter" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemMeter, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsSpecialControls" Namespace="VisuElemsSpecialControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsSpecialControls, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsWinControls" Namespace="VisuElemsWinControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsWinControls, 3.5.11.20 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemTextEditor" Namespace="VisuElemTextEditor" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTextEditor, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemTrace" Namespace="VisuElemTrace" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTrace, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuNativeControl" Namespace="VisuNativeControl" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuNativeControl, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsAlarm" Namespace="VisuElemsAlarm" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsAlarm, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemCamDisplayer" Namespace="VisuElemCamDisplayer" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemCamDisplayer, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElem3DPath" Namespace="VisuElem3DPath" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElem3DPath, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsDateTime" Namespace="VisuElemsDateTime" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsDateTime, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#system_visuinputs" Namespace="visuinputs" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="visuinputs, 3.5.10.0 (system)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>c2bac552-9807-4914-8bf7-a2144fae23d0</ObjectId>
+          </data>
+        </addData>
+      </Libraries>
+    </data>
     <data name="http://www.3s-software.com/plcopenxml/projectstructure" handleUnknown="discard">
       <ProjectStructure>
         <Object Name="CR710S" ObjectId="8a4045b1-25d3-40ed-a775-5d66b77f864d" />
+        <Object Name="Library Manager" ObjectId="c2bac552-9807-4914-8bf7-a2144fae23d0" />
         <Object Name="SafetyPLC" ObjectId="74f8a2c6-887a-412a-b40b-5e4f58755393">
           <Object Name="Communication" ObjectId="8eae2e73-2e8d-4ac9-b1fb-3499e322d2ff">
             <Object Name="CAN" ObjectId="cd6dba6a-8f1c-4690-a8c5-d085ec03d8a2" />
