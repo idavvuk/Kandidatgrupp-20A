@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-02T14:05:08.2570366" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-02T14:04:34.7877417" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-03T09:53:22.2437331" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-03T09:52:02.5537019" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1354,6 +1354,7 @@
                     <values>
                       <value name="Manual" />
                       <value name="Remote" />
+                      <value name="None" />
                     </values>
                   </enum>
                 </baseType>
@@ -1433,6 +1434,9 @@
                       <type>
                         <derived name="EStation" />
                       </type>
+                      <initialValue>
+                        <simpleValue value="EStation.Manual" />
+                      </initialValue>
                     </variable>
                     <variable name="AckManual">
                       <type>
@@ -1518,10 +1522,15 @@ CASE State OF
 		GrantedManual := (Pending = EStation.Manual);
 		GrantedRemote := (Pending = EStation.Remote); 
 		
-		IF (GrantedManual AND AckManual) OR (GrantedRemote AND AckRemote) THEN 
-			Active := Pending; 
+		IF (GrantedManual AND NOT ReqManual) OR (GrantedRemote AND NOT ReqRemote) THEN 
+			Pending := EStation.None; 
 			State := EStates.Stable; 
+			ELSIF (GrantedManual AND AckManual) OR (GrantedRemote AND AckRemote) THEN 
+				Active := Pending;
+				Pending := EStation.None;
+				State := EStates.Stable;  
 		END_IF
+		
 		
 END_CASE
 
