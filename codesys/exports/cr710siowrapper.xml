@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-03-05T10:32:42.6013442" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-03T13:48:06.8202091" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-03-05T14:27:06.2215125" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-05T14:25:11.5690234" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1379,7 +1379,7 @@
                 </Attributes>
               </data>
               <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
-                <ObjectId>cfd39f62-a8d3-47ae-aac6-de2a30895164</ObjectId>
+                <ObjectId>1ba4fcd4-7340-440d-ac0f-da43218d56a3</ObjectId>
               </data>
             </addData>
           </globalVars>
@@ -1595,6 +1595,11 @@
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="Lamp_FailSafe">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -1610,8 +1615,11 @@
 CASE State OF 
 	EStates.Stable: 
 		Pending := EStation.None; //No takeover in progress
-
-		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EStation.Manual AND GVL_HeartBeat.HB_Manual_OK THEN 
+		IF FailSafe THEN
+			Pending := EStation.None;
+			State := EStates.Stable;
+		
+		ELSIF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EStation.Manual AND GVL_HeartBeat.HB_Manual_OK THEN 
 			Pending := Estation.Manual;
 			State := EStates.PendingAck;
 
@@ -1620,8 +1628,11 @@ CASE State OF
 				State := EStates.PendingAck;
 		END_IF
 	EStates.PendingAck: 
-				
-		IF (GrantedManual AND (NOT ReqManual OR NOT GVL_HeartBeat.HB_Manual_OK)) OR (GrantedRemote AND (NOT ReqRemote OR NOT GVL_HeartBeat.HB_Remote_OK)) THEN 
+		IF FailSafe THEN
+			Pending := EStation.None;
+			State := EStates.Stable;
+		
+		ELSIF (GrantedManual AND (NOT ReqManual OR NOT GVL_HeartBeat.HB_Manual_OK)) OR (GrantedRemote AND (NOT ReqRemote OR NOT GVL_HeartBeat.HB_Remote_OK)) THEN 
 			Pending := EStation.None; 
 			State := EStates.Stable; 
   
@@ -1666,6 +1677,8 @@ Lamp_PendingReady := PendingReady;
 
 Lamp_Remote_No_HeartBeat := ReqRemote AND (NOT GVL_HeartBeat.HB_Remote_OK);
 Lamp_Manual_No_HeartBEat := ReqRemote AND (NOT GVL_HeartBeat.HB_Manual_OK);
+
+Lamp_FailSafe := FailSafe;
 
   
 
@@ -3399,7 +3412,7 @@ config_outgroups();
             <Object Name="EStation" ObjectId="b0f5250c-ab0a-4ee0-8ea3-eb68a42dfe8b" />
             <Object Name="EStates" ObjectId="71500b0c-0575-40e0-91ef-6cd2952ca44b" />
             <Object Name="HeartBeat" ObjectId="d7409722-4844-4629-9bf4-6a5e73b68fbb" />
-            <Object Name="GVL_HeartBeat" ObjectId="cfd39f62-a8d3-47ae-aac6-de2a30895164" />
+            <Object Name="GVL_HeartBeat" ObjectId="1ba4fcd4-7340-440d-ac0f-da43218d56a3" />
           </Object>
         </Object>
         <Object Name="Project Information" ObjectId="11c0fc3a-9bcf-4dd8-ac38-efb93363e521" />
