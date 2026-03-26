@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-03-09T13:26:49.0325306" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-05T14:25:11.5690234" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-03-26T15:55:39.7099574" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-26T15:54:51.617764" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1452,6 +1452,16 @@
               <pou name="PLC_PRG" pouType="program">
                 <interface>
                   <localVars>
+                    <variable name="fbHB_Manual">
+                      <type>
+                        <derived name="FB_HeartBeat" />
+                      </type>
+                    </variable>
+                    <variable name="fbHB_REmote">
+                      <type>
+                        <derived name="FB_HeartBeat" />
+                      </type>
+                    </variable>
                     <variable name="ReqManual">
                       <type>
                         <BOOL />
@@ -1483,7 +1493,7 @@
                         <BOOL />
                       </type>
                       <documentation>
-                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Acknowledge ready</xhtml>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Acknowledge read</xhtml>
                       </documentation>
                     </variable>
                     <variable name="AckRemote">
@@ -1606,11 +1616,33 @@
                   <ST>
                     <xhtml xmlns="http://www.w3.org/1999/xhtml">//CR710S_Config(); 			//IO Configuration
 
-//IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
+IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
 
 							//Put your Application program here 
+//Inputs till logik
+ReqManual := CR710S_IOs.IN0000;
+ReqRemote := CR710S_IOs.IN0001;
+AckManual := CR710S_IOs.IN0002;
+AckRemote := CR710S_IOs.IN0003;
+RelManual := CR710S_IOs.IN0100;
+RelRemote := CR710S_IOs.IN0101;
 
-//IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
+//HeartBeat signaler från inputs
+GVL_HeartBeat.HB_Manual_Signal	:= CR710S_IOs.IN0102;
+GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
+
+// Kör heartbeat-block
+fbHB_Manual(xSignal := GVL_HeartBeat.HB_Manual_Signal);
+fbHB_Remote(xSignal := GVL_HeartBeat.HB_Remote_Signal);
+
+//Spara resultatet i GVL
+GVL_HeartBeat.HB_Manual_OK	:= fbHB_Manual.xOk;
+GVL_HeartBeat.HB_Remote_OK	:= fbHB_Remote.xOk;
+
+IF (Active = EStation.Manual AND NOT GVL_HeartBeat.HB_Manual_OK) OR 
+	(Active = EStation.Remote AND NOT GVL_HeartBeat.HB_Remote_OK) THEN
+	FailSafe := TRUE;
+END_IF;
 
 CASE State OF 
 	EStates.Stable: 
@@ -1620,7 +1652,7 @@ CASE State OF
 			State := EStates.Stable;
 		
 		ELSIF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EStation.Manual AND GVL_HeartBeat.HB_Manual_OK THEN 
-			Pending := Estation.Manual;
+			Pending := EStation.Manual;
 			State := EStates.PendingAck;
 
 			ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EStation.Remote AND GVL_HeartBeat.HB_Remote_OK THEN
@@ -1676,11 +1708,17 @@ Lamp_Released := Released;
 Lamp_PendingReady := PendingReady;
 
 Lamp_Remote_No_HeartBeat := ReqRemote AND (NOT GVL_HeartBeat.HB_Remote_OK);
-Lamp_Manual_No_HeartBEat := ReqRemote AND (NOT GVL_HeartBeat.HB_Manual_OK);
+Lamp_Manual_No_HeartBeat := ReqManual AND (NOT GVL_HeartBeat.HB_Manual_OK);
 
 Lamp_FailSafe := FailSafe;
 
+//Outputs från logik
+//CR710s_IOs.OUT0000 := Lamp_ActiveManual;
+//CR710S_IOs.OUT0001 := Lamp_ActiveRemote;
+//CR710S_IOs.OUT0002 := Lamp_Pending;
+//CR710S_IOs.OUT0003 := Lamp_FailSafe;
   
+IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
 
 
 </xhtml>
@@ -2133,6 +2171,58 @@ config_outgroups();
                 <addData>
                   <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
                     <ObjectId>d7409722-4844-4629-9bf4-6a5e73b68fbb</ObjectId>
+                  </data>
+                </addData>
+              </pou>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
+              <pou name="FB_HeartBeat" pouType="functionBlock">
+                <interface>
+                  <inputVars>
+                    <variable name="xSignal">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                  </inputVars>
+                  <outputVars>
+                    <variable name="xOk">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                  </outputVars>
+                  <localVars>
+                    <variable name="tonTimeout">
+                      <type>
+                        <derived name="TON" />
+                      </type>
+                    </variable>
+                    <variable name="xPrevSignal">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="xPulse">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                  </localVars>
+                </interface>
+                <body>
+                  <ST>
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">xPulse := (xSignal &lt;&gt; xPrevSignal);
+xPrevSignal := xSignal;
+// Om ingen ny puls kommer, låt timern gå 
+tonTimeout(IN := NOT xPulse, PT := T#500MS);
+xOk := NOT tonTimeout.Q;
+</xhtml>
+                  </ST>
+                </body>
+                <addData>
+                  <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+                    <ObjectId>2af87149-06e6-47ae-aa30-3f298237bbf7</ObjectId>
                   </data>
                 </addData>
               </pou>
@@ -3413,6 +3503,7 @@ config_outgroups();
             <Object Name="EStates" ObjectId="71500b0c-0575-40e0-91ef-6cd2952ca44b" />
             <Object Name="HeartBeat" ObjectId="d7409722-4844-4629-9bf4-6a5e73b68fbb" />
             <Object Name="GVL_HeartBeat" ObjectId="1ba4fcd4-7340-440d-ac0f-da43218d56a3" />
+            <Object Name="FB_HeartBeat" ObjectId="2af87149-06e6-47ae-aa30-3f298237bbf7" />
           </Object>
         </Object>
         <Object Name="Project Information" ObjectId="11c0fc3a-9bcf-4dd8-ac38-efb93363e521" />
