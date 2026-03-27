@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-27T17:47:39.9952958" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-27T13:50:59.6235373" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-27T18:10:34.0230714" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-27T18:10:20.9245337" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2240,31 +2240,16 @@ GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
             </data>
             <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
               <pou name="OutputProcessing" pouType="functionBlock">
-                <interface />
-                <body>
-                  <ST>
-                    <xhtml xmlns="http://www.w3.org/1999/xhtml" />
-                  </ST>
-                </body>
-                <addData>
-                  <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
-                    <ObjectId>68d01b2d-e626-4b9c-a105-7e021ee89613</ObjectId>
-                  </data>
-                </addData>
-              </pou>
-            </data>
-            <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
-              <pou name="PLC_PRG" pouType="program">
                 <interface>
-                  <localVars>
-                    <variable name="fbHB_Manual">
+                  <inputVars>
+                    <variable name="GrantedManual">
                       <type>
-                        <derived name="FB_HeartBeat" />
+                        <BOOL />
                       </type>
                     </variable>
-                    <variable name="fbHB_REmote">
+                    <variable name="GrantedRemote">
                       <type>
-                        <derived name="FB_HeartBeat" />
+                        <BOOL />
                       </type>
                     </variable>
                     <variable name="ReqManual">
@@ -2280,46 +2265,12 @@ GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
                         <BOOL />
                       </type>
                     </variable>
-                    <variable name="RelManual">
-                      <type>
-                        <BOOL />
-                      </type>
-                      <documentation>
-                        <xhtml xmlns="http://www.w3.org/1999/xhtml"> Release control</xhtml>
-                      </documentation>
-                    </variable>
-                    <variable name="RelRemote">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="AckManual">
-                      <type>
-                        <BOOL />
-                      </type>
-                      <documentation>
-                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Acknowledge read</xhtml>
-                      </documentation>
-                    </variable>
-                    <variable name="AckRemote">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
                     <variable name="State">
                       <type>
                         <derived name="ETransitionState" />
                       </type>
                     </variable>
                     <variable name="Active">
-                      <type>
-                        <derived name="EControlMode" />
-                      </type>
-                      <initialValue>
-                        <simpleValue value="EControlMode.Manual" />
-                      </initialValue>
-                    </variable>
-                    <variable name="Pending">
                       <type>
                         <derived name="EControlMode" />
                       </type>
@@ -2334,27 +2285,18 @@ GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
                         <BOOL />
                       </type>
                     </variable>
-                    <variable name="FailSafe">
-                      <type>
-                        <BOOL />
-                      </type>
-                      <initialValue>
-                        <simpleValue value="FALSE" />
-                      </initialValue>
-                    </variable>
-                    <variable name="GrantedManual">
-                      <type>
-                        <BOOL />
-                      </type>
-                      <documentation>
-                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Granted</xhtml>
-                      </documentation>
-                    </variable>
-                    <variable name="GrantedRemote">
+                    <variable name="HB_Manual_OK">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="HB_Remote_OK">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                  </inputVars>
+                  <outputVars>
                     <variable name="Lamp_RequestManual">
                       <type>
                         <BOOL />
@@ -2415,6 +2357,68 @@ GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
                         <BOOL />
                       </type>
                     </variable>
+                  </outputVars>
+                </interface>
+                <body>
+                  <ST>
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">
+
+Lamp_RequestManual := ReqManual; 
+Lamp_RequestRemote := ReqRemote; 
+
+Lamp_GrantedManual := GrantedManual; 
+Lamp_GrantedRemote := GrantedRemote;
+
+Lamp_Pending := (State = ETransitionState.PENDING_ACK); 
+
+Lamp_ActiveManual := (Active = EControlMode.MANUAL);
+Lamp_ActiveRemote := (Active = EControlMode.REMOTE);
+
+Lamp_Released := Released;
+Lamp_PendingReady := PendingReady;
+
+Lamp_Remote_No_HeartBeat := ReqRemote AND NOT HB_Remote_OK;
+Lamp_Manual_No_HeartBeat := ReqManual AND NOT HB_Manual_OK;
+
+Lamp_FailSafe := (Active = EControlMode.FAILSAFE); </xhtml>
+                  </ST>
+                </body>
+                <addData>
+                  <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+                    <ObjectId>68d01b2d-e626-4b9c-a105-7e021ee89613</ObjectId>
+                  </data>
+                </addData>
+              </pou>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
+              <pou name="PLC_PRG" pouType="program">
+                <interface>
+                  <localVars>
+                    <variable name="fbInputProcessing">
+                      <type>
+                        <derived name="InputProcessing" />
+                      </type>
+                    </variable>
+                    <variable name="fbControlUnit">
+                      <type>
+                        <derived name="ControlUnit" />
+                      </type>
+                    </variable>
+                    <variable name="fbOutputProcessing">
+                      <type>
+                        <derived name="OutputProcessing" />
+                      </type>
+                    </variable>
+                    <variable name="fbHB_Manual">
+                      <type>
+                        <derived name="FB_HeartBeat" />
+                      </type>
+                    </variable>
+                    <variable name="fbHB_REmote">
+                      <type>
+                        <derived name="FB_HeartBeat" />
+                      </type>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -2424,6 +2428,28 @@ GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
 IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
 
 							//Put your Application program here 
+
+fbInputProcessing();
+
+fbControlUnit( 
+	Reqmanual := fbInputProcessing.ReqManual,
+	ReqRemote   := fbInputProcessing.ReqRemote,
+    AckManual   := fbInputProcessing.AckManual,
+    AckRemote   := fbInputProcessing.AckRemote,
+    RelManual   := fbInputProcessing.RelManual,
+    RelRemote   := fbInputProcessing.RelRemote
+); 
+
+fbOutputProcessing( 
+	ReqManual       := fbInputProcessing.ReqManual,
+    ReqRemote       := fbInputProcessing.ReqRemote,
+    GrantedManual   := fbControlUnit.GrantedManual,
+    GrantedRemote   := fbControlUnit.GrantedRemote,
+    Active          := fbControlUnit.Active,
+    State           := fbControlUnit.State,
+    HB_Manual_OK    := GVL_HeartBeat.HB_Manual_OK,
+    HB_Remote_OK    := GVL_HeartBeat.HB_Remote_OK
+); 
 
 // Kör heartbeat-block
 fbHB_Manual(xSignal := GVL_HeartBeat.HB_Manual_Signal);
@@ -2492,9 +2518,9 @@ IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outpu
             <Device xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="">
               <DeviceType>
                 <DeviceIdentification>
-                  <Type>4097</Type>
-                  <Id>0000 0002</Id>
-                  <Version>3.5.11.50</Version>
+                  <Type>4096</Type>
+                  <Id>1063 0315</Id>
+                  <Version>3.2.0.0</Version>
                 </DeviceIdentification>
                 <Connector moduleType="40000" interface="ifm:SystemR360III" connectorId="1">
                   <HostParameterSet />
