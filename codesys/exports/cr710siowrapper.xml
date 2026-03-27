@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-27T11:16:15.6268704" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-27T11:15:41.6902549" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-27T13:51:28.8655686" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-27T13:50:59.6235373" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1392,7 +1392,7 @@
                       <value name="INIT" />
                       <value name="MANUAL" />
                       <value name="REMOTE" />
-                      <value name="NONE" />
+                      <value name="FAILSAFE" />
                     </values>
                   </enum>
                 </baseType>
@@ -1409,6 +1409,12 @@
                         <Name>REMOTE</Name>
                         <Documentation>
                           <xhtml xmlns="http://www.w3.org/1999/xhtml">prio 2</xhtml>
+                        </Documentation>
+                      </EnumValue>
+                      <EnumValue>
+                        <Name>FAILSAFE</Name>
+                        <Documentation>
+                          <xhtml xmlns="http://www.w3.org/1999/xhtml">NONE,</xhtml>
                         </Documentation>
                       </EnumValue>
                     </EnumValueDocumentation>
@@ -1432,7 +1438,6 @@
                     <values>
                       <value name="STABLE" />
                       <value name="PENDING_ACK" />
-                      <value name="FAILSAFE" />
                     </values>
                   </enum>
                 </baseType>
@@ -1451,12 +1456,6 @@
                           <xhtml xmlns="http://www.w3.org/1999/xhtml">Transition in progress, waiting for acknowledgement</xhtml>
                         </Documentation>
                       </EnumValue>
-                      <EnumValue>
-                        <Name>FAILSAFE</Name>
-                        <Documentation>
-                          <xhtml xmlns="http://www.w3.org/1999/xhtml"> We're in failsafe, no transition allowed</xhtml>
-                        </Documentation>
-                      </EnumValue>
                     </EnumValueDocumentation>
                   </data>
                   <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
@@ -1472,6 +1471,52 @@
                 <documentation>
                   <xhtml xmlns="http://www.w3.org/1999/xhtml"> Where the system is in the transition process</xhtml>
                 </documentation>
+              </dataType>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/datatype" handleUnknown="implementation">
+              <dataType name="EPendingMode">
+                <baseType>
+                  <enum>
+                    <values>
+                      <value name="NONE" />
+                      <value name="PENDING_MANUAL" />
+                      <value name="PENDING_REMOTE" />
+                    </values>
+                  </enum>
+                </baseType>
+                <addData>
+                  <data name="http://www.3s-software.com/plcopenxml/enumvaluedocumentation" handleUnknown="implementation">
+                    <EnumValueDocumentation>
+                      <EnumValue>
+                        <Name>NONE</Name>
+                        <Documentation>
+                          <xhtml xmlns="http://www.w3.org/1999/xhtml">No state pending</xhtml>
+                        </Documentation>
+                      </EnumValue>
+                      <EnumValue>
+                        <Name>PENDING_MANUAL</Name>
+                        <Documentation>
+                          <xhtml xmlns="http://www.w3.org/1999/xhtml">Pending manual </xhtml>
+                        </Documentation>
+                      </EnumValue>
+                      <EnumValue>
+                        <Name>PENDING_REMOTE</Name>
+                        <Documentation>
+                          <xhtml xmlns="http://www.w3.org/1999/xhtml">Pending remote</xhtml>
+                        </Documentation>
+                      </EnumValue>
+                    </EnumValueDocumentation>
+                  </data>
+                  <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
+                    <Attributes>
+                      <Attribute Name="qualified_only" Value="" />
+                      <Attribute Name="strict" Value="" />
+                    </Attributes>
+                  </data>
+                  <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+                    <ObjectId>5d8d9418-8812-4902-aa5a-a9249e8eb9de</ObjectId>
+                  </data>
+                </addData>
               </dataType>
             </data>
             <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
@@ -1973,66 +2018,13 @@ xOk := NOT tonTimeout.Q;
             <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
               <pou name="ControlUnit" pouType="functionBlock">
                 <interface>
-                  <localVars>
-                    <variable name="None">
-                      <type>
-                        <INT />
-                      </type>
-                    </variable>
+                  <inputVars>
                     <variable name="ReqManual">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
                     <variable name="ReqRemote">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="State">
-                      <type>
-                        <derived name="ETransitionState" />
-                      </type>
-                    </variable>
-                    <variable name="Active">
-                      <type>
-                        <derived name="EControlMode" />
-                      </type>
-                      <initialValue>
-                        <simpleValue value="EControlMode.MANUAL" />
-                      </initialValue>
-                    </variable>
-                    <variable name="Pending">
-                      <type>
-                        <derived name="EControlMode" />
-                      </type>
-                    </variable>
-                    <variable name="GrantedManual">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="GrantedRemote">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="Released">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="RelManual">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="RelRemote">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="PendingReady">
                       <type>
                         <BOOL />
                       </type>
@@ -2047,62 +2039,125 @@ xOk := NOT tonTimeout.Q;
                         <BOOL />
                       </type>
                     </variable>
-                    <variable name="FailSafe">
+                    <variable name="RelManual">
                       <type>
                         <BOOL />
                       </type>
+                    </variable>
+                    <variable name="RelRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                  </inputVars>
+                  <outputVars>
+                    <variable name="Active">
+                      <type>
+                        <derived name="EControlMode" />
+                      </type>
                       <initialValue>
-                        <simpleValue value="FALSE" />
+                        <simpleValue value="EControlMode.MANUAL" />
                       </initialValue>
+                    </variable>
+                    <variable name="GrantedManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="GrantedRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                  </outputVars>
+                  <localVars>
+                    <variable name="State">
+                      <type>
+                        <derived name="ETransitionState" />
+                      </type>
+                    </variable>
+                    <variable name="Pending">
+                      <type>
+                        <derived name="EPendingMode" />
+                      </type>
+                    </variable>
+                    <variable name="Released">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="PendingReady">
+                      <type>
+                        <BOOL />
+                      </type>
                     </variable>
                   </localVars>
                 </interface>
                 <body>
                   <ST>
-                    <xhtml xmlns="http://www.w3.org/1999/xhtml">CASE State OF 
-	ETransitionState.Stable: 
-		Pending := EControlMode.None; //No takeover in progress
-		IF FailSafe THEN
-			Pending := EControlMode.None;
-			State := ETransitionState.Stable;
-		
-		ELSIF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.Manual AND GVL_HeartBeat.HB_Manual_OK THEN 
-			Pending := EControlMode.Manual;
-			State := ETransitionState.PENDING_ACK;
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">//Initial state set
+IF Active = EControlMode.INIT THEN 
+	Active := EControlMode.MANUAL;
+END_IF
 
-			ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.Remote AND GVL_HeartBeat.HB_Remote_OK THEN
-				Pending := EControlMode.Remote;
-				State := ETransitionState.PENDING_ACK;
+//If in FailSafe then we block everything else
+IF Active = EControlMode.FAILSAFE THEN 
+	Pending := EPendingMode.NONE; //set pending to none
+	State := ETransitionState.STABLE; //no transition active
+	RETURN; 
+END_IF
+ 
+CASE State OF 
+	//Stable: No transition is currently in progress
+	ETransitionState.STABLE: 
+		Pending := EPendingMode.NONE; //No one is trying to take over
+	
+		//Manual station requests control
+		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.MANUAL AND
+			GVL_HeartBeat.HB_Manual_OK THEN 
+				Pending := EPendingMode.PENDING_MANUAL; 
+				State := ETransitionState.PENDING_ACK; 
+		//Remote station requests control
+		ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.REMOTE AND 
+			GVL_HeartBeat.HB_Remote_OK THEN
+				Pending := EPendingMode.PENDING_REMOTE; 
+				State := ETransitionState.PENDING_ACK; 
 		END_IF
-	ETransitionState.PENDING_ACK: 
-		IF FailSafe THEN
-			Pending := EControlMode.None;
-			State := ETransitionState.Stable;
-		
-		ELSIF (GrantedManual AND (NOT ReqManual OR NOT GVL_HeartBeat.HB_Manual_OK)) OR (GrantedRemote AND (NOT ReqRemote OR NOT GVL_HeartBeat.HB_Remote_OK)) THEN 
-			Pending := EControlMode.None; 
-			State := ETransitionState.Stable; 
-  
-			ELSE
-				//Has the current active station released control?
-				Released := (Active = EControlMode.Manual AND RelManual) OR (Active = EControlMode.Remote AND RelRemote);
-		
-				// Is the new Pending station ready to take control?
-				PendingReady := (Pending = EControlMode.Manual AND AckManual) OR (Pending = EControlMode.Remote AND AckRemote);
-		
-				// Switch only when both are true
-				IF Released AND PendingReady THEN
-					Active := Pending; 
-					Pending := EControlMode.None;
-					State := ETransitionState.Stable;
-					//Testar att ta bort dessa
-					Released := FALSE; 
-					ReqRemote := FALSE; 
-					ReqManual := FALSE; 
+	
+	//Transition has been granted, waiting for acknowledgement from both control modes
+	ETransitionState.PENDING_ACK:
+		IF (GrantedManual AND (NOT ReqManual OR NOT GVL_HeartBeat.HB_Manual_OK)) OR
+		   (GrantedRemote AND (NOT ReqRemote OR NOT GVL_HeartBeat.HB_Remote_OK)) THEN
+			Pending := EPendingMode.NONE;
+			State := ETransitionState.STABLE;
+		ELSE
+			Released := (Active = EControlMode.MANUAL AND RelManual) OR
+					   (Active = EControlMode.REMOTE AND RelRemote);
+
+			PendingReady := (Pending = EPendingMode.PENDING_MANUAL AND AckManual) OR
+						   (Pending = EPendingMode.PENDING_REMOTE AND AckRemote);
+
+			IF Released AND PendingReady THEN
+				// Convert EPendingMode to EControlMode
+				IF Pending = EPendingMode.PENDING_MANUAL THEN
+					Active := EControlMode.MANUAL;
+				ELSIF Pending = EPendingMode.PENDING_REMOTE THEN
+					Pending := EPendingMode.NONE;
+					State := ETransitionState.STABLE;
+					Released := FALSE;
+					ReqRemote := FALSE;
+					ReqManual := FALSE;
 				END_IF
+			END_IF
 		END_IF
+END_CASE
+
+
+//Updated grant signals based on the current pending mode 
+GrantedManual := (Pending = EPendingMode.PENDING_MANUAL);
+GrantedRemote := (Pending = EPendingMode.PENDING_REMOTE);
 		
-END_CASE</xhtml>
+</xhtml>
                   </ST>
                 </body>
                 <addData>
@@ -3587,31 +3642,9 @@ IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outpu
     </configurations>
   </instances>
   <addData>
-    <data name="http://www.3s-software.com/plcopenxml/libraries" handleUnknown="implementation">
-      <Libraries>
-        <Library Name="#System_VisuElems" Namespace="VisuElems" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElems, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemMeter" Namespace="VisuElemMeter" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemMeter, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsSpecialControls" Namespace="VisuElemsSpecialControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsSpecialControls, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsWinControls" Namespace="VisuElemsWinControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsWinControls, 3.5.11.20 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemTextEditor" Namespace="VisuElemTextEditor" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTextEditor, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemTrace" Namespace="VisuElemTrace" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTrace, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuNativeControl" Namespace="VisuNativeControl" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuNativeControl, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsAlarm" Namespace="VisuElemsAlarm" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsAlarm, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemCamDisplayer" Namespace="VisuElemCamDisplayer" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemCamDisplayer, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElem3DPath" Namespace="VisuElem3DPath" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElem3DPath, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsDateTime" Namespace="VisuElemsDateTime" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsDateTime, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#system_visuinputs" Namespace="visuinputs" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="visuinputs, 3.5.10.0 (system)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <addData>
-          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
-            <ObjectId>c2bac552-9807-4914-8bf7-a2144fae23d0</ObjectId>
-          </data>
-        </addData>
-      </Libraries>
-    </data>
     <data name="http://www.3s-software.com/plcopenxml/projectstructure" handleUnknown="discard">
       <ProjectStructure>
         <Object Name="CR710S" ObjectId="8a4045b1-25d3-40ed-a775-5d66b77f864d" />
-        <Object Name="Library Manager" ObjectId="c2bac552-9807-4914-8bf7-a2144fae23d0" />
         <Object Name="SafetyPLC" ObjectId="74f8a2c6-887a-412a-b40b-5e4f58755393">
           <Object Name="Communication" ObjectId="8eae2e73-2e8d-4ac9-b1fb-3499e322d2ff">
             <Object Name="CAN" ObjectId="cd6dba6a-8f1c-4690-a8c5-d085ec03d8a2" />
@@ -3662,6 +3695,7 @@ IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outpu
             <Object Name="InputProcessing" ObjectId="4f273eba-3353-4884-b4b5-9069660833e2" />
             <Object Name="OutputProcessing" ObjectId="68d01b2d-e626-4b9c-a105-7e021ee89613" />
             <Object Name="PLC_PRG" ObjectId="a45e625f-1b31-4fd3-900b-f9f443a5cee1" />
+            <Object Name="EPendingMode" ObjectId="5d8d9418-8812-4902-aa5a-a9249e8eb9de" />
           </Object>
         </Object>
         <Object Name="Project Information" ObjectId="11c0fc3a-9bcf-4dd8-ac38-efb93363e521" />
