@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-27T13:51:28.8655686" />
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-27T17:47:39.9952958" />
   <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-27T13:50:59.6235373" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
@@ -2106,6 +2106,9 @@ IF Active = EControlMode.FAILSAFE THEN
 	State := ETransitionState.STABLE; //no transition active
 	RETURN; 
 END_IF
+
+
+
  
 CASE State OF 
 	//Stable: No transition is currently in progress
@@ -2169,10 +2172,63 @@ GrantedRemote := (Pending = EPendingMode.PENDING_REMOTE);
             </data>
             <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
               <pou name="InputProcessing" pouType="functionBlock">
-                <interface />
+                <interface>
+                  <inputVars>
+                    <variable name="ReqManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml"> Request takeover</xhtml>
+                      </documentation>
+                    </variable>
+                    <variable name="ReqRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RelManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml"> Release control</xhtml>
+                      </documentation>
+                    </variable>
+                    <variable name="RelRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="AckManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Acknowledge read</xhtml>
+                      </documentation>
+                    </variable>
+                    <variable name="AckRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                  </inputVars>
+                </interface>
                 <body>
                   <ST>
-                    <xhtml xmlns="http://www.w3.org/1999/xhtml" />
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">//Inputs till logik
+ReqManual := CR710S_IOs.IN0000;
+ReqRemote := CR710S_IOs.IN0001;
+AckManual := CR710S_IOs.IN0002;
+AckRemote := CR710S_IOs.IN0003;
+RelManual := CR710S_IOs.IN0100;
+RelRemote := CR710S_IOs.IN0101;
+
+//HeartBeat signaler från inputs
+GVL_HeartBeat.HB_Manual_Signal	:= CR710S_IOs.IN0102;
+GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
+</xhtml>
                   </ST>
                 </body>
                 <addData>
@@ -2368,17 +2424,6 @@ GrantedRemote := (Pending = EPendingMode.PENDING_REMOTE);
 IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
 
 							//Put your Application program here 
-//Inputs till logik
-ReqManual := CR710S_IOs.IN0000;
-ReqRemote := CR710S_IOs.IN0001;
-AckManual := CR710S_IOs.IN0002;
-AckRemote := CR710S_IOs.IN0003;
-RelManual := CR710S_IOs.IN0100;
-RelRemote := CR710S_IOs.IN0101;
-
-//HeartBeat signaler från inputs
-GVL_HeartBeat.HB_Manual_Signal	:= CR710S_IOs.IN0102;
-GVL_HeartBeat.HB_Remote_Signal 	:= CR710S_IOs.IN0103;
 
 // Kör heartbeat-block
 fbHB_Manual(xSignal := GVL_HeartBeat.HB_Manual_Signal);
