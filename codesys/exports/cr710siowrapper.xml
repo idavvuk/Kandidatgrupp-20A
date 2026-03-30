@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-30T14:57:53.8430931" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-30T14:57:14.5251858" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-30T16:43:06.1527687" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-30T16:42:54.5343035" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2039,6 +2039,14 @@ config_outgroups();
                         <REAL />
                       </type>
                     </variable>
+                    <variable name="MaxAckTime">
+                      <type>
+                        <TIME />
+                      </type>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml">timeout threshold</xhtml>
+                      </documentation>
+                    </variable>
                   </inputVars>
                   <outputVars>
                     <variable name="Active">
@@ -2079,6 +2087,11 @@ config_outgroups();
                     <variable name="Pending">
                       <type>
                         <derived name="EPendingMode" />
+                      </type>
+                    </variable>
+                    <variable name="tAckTimer">
+                      <type>
+                        <derived name="TON" />
                       </type>
                     </variable>
                   </localVars>
@@ -2172,6 +2185,43 @@ CASE State OF
 				END_IF
 			END_IF
 		END_IF
+		
+		tAckTimer (IN := TRUE, PT := MaxAckTime); 
+		
+		IF tAckTimer.Q THEN 
+			Pending := EPendingMode.NONE; 
+			State := ETransitionState.STABLE; 
+			tAckTimer (IN := FALSE); // Reset timer 
+		END_IF
+		
+		//cancel if requesting station is dropped or lost its heartbeat
+		IF (GrantedManual AND (NOT ReqManual OR NOT HB_Manual_OK)) OR 
+			(GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) THEN
+			Pending := EPendingMode.NONE; 
+			State := ETransitionState.STABLE; 
+			tAckTimer (IN := FALSE); // Reset timer
+		ELSE 
+			Released := (Active = EControlMode.MANUAL AND RelManual) OR 
+			(Active = EControlMode.REMOTE AND RelRemote); 
+			
+			PendingReady := (Pending = EPendingMode.PENDING_MANUAL AND AckManual) OR 
+			(Pending = EPendingMode.PENDING_REMOTE AND AckRemote); 
+			
+			IF Released AND PendingReady THEN 
+				IF Pending = EPendingMode.PENDING_MANUAL THEN 
+					Active := EControlMode.MANUAL; 
+				ELSIF PEnding = EPendingMode.PENDING_REMOTE THEN 
+					Active := EControlMode.REMOTE; 
+				END_IF
+				Pending := EPendingMode.NONE; 
+				State := ETransitionState.STABLE; 
+				tAckTimer(IN := FALSE); 
+				Released := FALSE; 
+				ReqRemote := FALSE; 
+				ReqManual := FALSE; 
+			END_IF
+		END_IF
+		
 END_CASE
 
 
