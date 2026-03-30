@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-30T14:26:12.0339307" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-30T14:25:58.7667841" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-30T14:57:53.8430931" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-30T14:57:14.5251858" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2019,6 +2019,26 @@ config_outgroups();
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="Velocity">
+                      <type>
+                        <REAL />
+                      </type>
+                    </variable>
+                    <variable name="MaxVelocity">
+                      <type>
+                        <REAL />
+                      </type>
+                    </variable>
+                    <variable name="SteeringAngle">
+                      <type>
+                        <REAL />
+                      </type>
+                    </variable>
+                    <variable name="MaxSteering">
+                      <type>
+                        <REAL />
+                      </type>
+                    </variable>
                   </inputVars>
                   <outputVars>
                     <variable name="Active">
@@ -2106,20 +2126,30 @@ CASE State OF
 	
 		//Manual station requests control
 		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.MANUAL AND
-			GVL_HeartBeat.HB_Manual_OK THEN 
+			HB_Manual_OK THEN 
 				Pending := EPendingMode.PENDING_MANUAL; 
 				State := ETransitionState.PENDING_ACK; 
 		//Remote station requests control
 		ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.REMOTE AND 
-			GVL_HeartBeat.HB_Remote_OK THEN
+			HB_Remote_OK THEN
 				Pending := EPendingMode.PENDING_REMOTE; 
 				State := ETransitionState.PENDING_ACK; 
+		END_IF
+		
+		IF Velocity &gt; MaxVelocity OR SteeringAngle &gt; MaxSteering THEN 
+			//not allowed
+		ELSIF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.MANUAL AND HB_Manual_OK THEN 
+			Pending := EPendingMode.PENDING_MANUAL; 
+			State := ETransitionState.PENDING_ACK; 
+		ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.REMOTE AND HB_Remote_OK THEN 
+			Pending := EPendingMode.PENDING_REMOTE; 
+			State := ETransitionState.PENDING_ACK; 
 		END_IF
 	
 	//Transition has been granted, waiting for acknowledgement from both control modes
 	ETransitionState.PENDING_ACK:
-		IF (GrantedManual AND (NOT ReqManual OR NOT GVL_HeartBeat.HB_Manual_OK)) OR
-		   (GrantedRemote AND (NOT ReqRemote OR NOT GVL_HeartBeat.HB_Remote_OK)) THEN
+		IF (GrantedManual AND (NOT ReqManual OR NOT HB_Manual_OK)) OR
+		   (GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) THEN
 			Pending := EPendingMode.NONE;
 			State := ETransitionState.STABLE;
 		ELSE
