@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-31T14:51:45.0415822" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-31T14:51:15.5499322" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-31T15:40:16.3228588" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-31T15:40:03.9974365" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1784,6 +1784,14 @@ fbOutputProcessing(
     HB_Remote_OK    := GVL_HeartBeat.HB_Remote_OK
 );
 
+OUT0000.VAR_IN.xValue := fbOutputProcessing.Out_GrantedManual;
+OUT0001.VAR_IN.xValue := fbOutputProcessing.Out_GrantedRemote;
+OUT0002.VAR_IN.xValue := fbOutputProcessing.Out_ActiveManual;
+OUT0003.VAR_IN.xValue := fbOutputProcessing.Out_ActiveRemote;
+OUT0004.VAR_IN.xValue := fbOutputProcessing.Out_Pending;
+OUT0005.VAR_IN.xValue := fbOutputProcessing.Out_NoHB_Manual;
+OUT0006.VAR_IN.xValue := fbOutputProcessing.Out_NoHB_Remote;
+OUT0007.VAR_IN.xValue := fbOutputProcessing.Out_FailSafe;
 
 IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
 
@@ -1916,14 +1924,14 @@ OUTGROUP1.CONFIG.SET_DIAG_LVL_PROT		(0, 12000, 100, eDIAG_PROT_MODE.DIAG_PROT);
                       <ST>
                         <xhtml xmlns="http://www.w3.org/1999/xhtml">(* Output Mode Configuration *) 
 (* Group 0 *)
-OUT0000.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
-OUT0001.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
-OUT0002.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
-OUT0003.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
-OUT0004.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
-OUT0005.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
-OUT0006.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
-OUT0007.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
+OUT0000.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
+OUT0001.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
+OUT0002.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
+OUT0003.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
+OUT0004.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
+OUT0005.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
+OUT0006.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
+OUT0007.CONFIG.OUT_DIGITAL_CSO				(FILTER_OUTPUT.UNCHANGED);
 (* Group 1 *)         				    		
 OUT0100.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
 OUT0101.CONFIG.MONITOR			(FILTER_OUTPUT.UNCHANGED);
@@ -2488,7 +2496,7 @@ OUT_PendingReady  := PendingReady;
 OUT_Released	  := Released; 
 OUT_NoHB_Manual   := NOT HB_Manual_OK; 
 OUT_NoHB_Remote   := NOT HB_Remote_OK; 
-OUT_FailSafe	  := (Active = EControlMode.FAILSAFE);
+OUT_FailSafe	  :=(Active = EControlMode.FAILSAFE);
 
 (*
 Lamp_RequestManual := ReqManual;
