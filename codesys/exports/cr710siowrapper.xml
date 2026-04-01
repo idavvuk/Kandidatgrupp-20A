@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-03-31T16:49:15.8982599" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-03-31T16:49:01.5290604" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-01T12:34:28.3093203" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-01T12:34:11.5716937" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1570,7 +1570,7 @@ END_IF</xhtml>
             </variable>
             <variable name="Pending">
               <type>
-                <derived name="EControlMode" />
+                <derived name="EPendingMode" />
               </type>
               <documentation>
                 <xhtml xmlns="http://www.w3.org/1999/xhtml"> Vem vill ta över</xhtml>
@@ -1803,7 +1803,7 @@ END_IF</xhtml>
                 </interface>
                 <body>
                   <ST>
-                    <xhtml xmlns="http://www.w3.org/1999/xhtml">//CR710S_Config(); 			//IO Configuration
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">CR710S_Config(); 			//IO Configuration
 
 IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
 
@@ -1861,14 +1861,12 @@ fbDecisionLogger(
 	State := fbControlUnit.State
 ); 
 	
-OUT0000.VAR_IN.xValue := fbOutputProcessing.Out_GrantedManual;
-OUT0001.VAR_IN.xValue := fbOutputProcessing.Out_GrantedRemote;
-OUT0002.VAR_IN.xValue := fbOutputProcessing.Out_ActiveManual;
-OUT0003.VAR_IN.xValue := fbOutputProcessing.Out_ActiveRemote;
-OUT0004.VAR_IN.xValue := fbOutputProcessing.Out_Pending;
-OUT0005.VAR_IN.xValue := fbOutputProcessing.Out_NoHB_Manual;
-OUT0006.VAR_IN.xValue := fbOutputProcessing.Out_NoHB_Remote;
-OUT0007.VAR_IN.xValue := fbOutputProcessing.Out_FailSafe;
+OUT0000.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_GrantedManual, 0, 2500);
+OUT0001.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_GrantedRemote, 0, 2500);
+OUT0002.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_ActiveManual, 0, 2500);
+OUT0003.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_ActiveRemote, 0, 2500);
+OUT0004.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_Pending, 0, 2500);
+OUT0005.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_FailSafe, 0, 2500);
 
 IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
 
