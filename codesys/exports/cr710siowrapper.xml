@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-01T20:27:06.8676837" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-01T20:26:33.7174143" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-02T21:03:58.1856592" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-02T21:03:21.1170103" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1425,6 +1425,11 @@
                 <BOOL />
               </type>
             </variable>
+            <variable name="ReqAuto">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="AckManual">
               <type>
                 <BOOL />
@@ -1435,12 +1440,22 @@
                 <BOOL />
               </type>
             </variable>
+            <variable name="AckAuto">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="RelManual">
               <type>
                 <BOOL />
               </type>
             </variable>
             <variable name="RelRemote">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="RelAuto">
               <type>
                 <BOOL />
               </type>
@@ -1458,12 +1473,22 @@
                 <BOOL />
               </type>
             </variable>
+            <variable name="Lamp_RequestAuto">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="Lamp_GrantedManual">
               <type>
                 <BOOL />
               </type>
             </variable>
             <variable name="Lamp_GrantedRemote">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="Lamp_GrantedAuto">
               <type>
                 <BOOL />
               </type>
@@ -1479,6 +1504,11 @@
               </type>
             </variable>
             <variable name="Lamp_ActiveRemote">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="Lamp_ActiveAuto">
               <type>
                 <BOOL />
               </type>
@@ -1499,6 +1529,11 @@
               </type>
             </variable>
             <variable name="Lamp_Manual_No_HeartBeat">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="Lamp_Auto_No_HeartBeat">
               <type>
                 <BOOL />
               </type>
@@ -1559,6 +1594,11 @@
                 <BOOL />
               </type>
             </variable>
+            <variable name="GrantedAuto">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="Released">
               <type>
                 <BOOL />
@@ -1589,7 +1629,7 @@
                       <value name="INIT" />
                       <value name="MANUAL" />
                       <value name="REMOTE" />
-                      <value name="Auto" />
+                      <value name="AUTO" />
                       <value name="FAILSAFE" />
                     </values>
                   </enum>
@@ -1610,7 +1650,7 @@
                         </Documentation>
                       </EnumValue>
                       <EnumValue>
-                        <Name>Auto</Name>
+                        <Name>AUTO</Name>
                         <Documentation>
                           <xhtml xmlns="http://www.w3.org/1999/xhtml">prio 3</xhtml>
                         </Documentation>
@@ -1679,6 +1719,7 @@
                       <value name="NONE" />
                       <value name="PENDING_MANUAL" />
                       <value name="PENDING_REMOTE" />
+                      <value name="PENDING_AUTO" />
                     </values>
                   </enum>
                 </baseType>
@@ -1788,17 +1829,22 @@ GVL_HeartBeat.HB_Auto_Signal := fbInputProcessing.HB_Auto_Signal;
 fbControlUnit(
     ReqManual   := fbInputProcessing.ReqManual,
     ReqRemote   := fbInputProcessing.ReqRemote,
+	ReqAuto		:= fbInputProcessing.ReqAuto,
     AckManual   := fbInputProcessing.AckManual,
     AckRemote   := fbInputProcessing.AckRemote,
+	AckAuto		:= fbInputProcessing.AckAuto,
     RelManual   := fbInputProcessing.RelManual,
-    RelRemote   := fbInputProcessing.RelRemote
+    RelRemote   := fbInputProcessing.RelRemote,
+	RelAuto		:= fbInputProcessing.RelAuto
 );
 
 fbOutputProcessing(
     ReqManual       := fbInputProcessing.ReqManual,
     ReqRemote       := fbInputProcessing.ReqRemote,
+	ReqAuto			:= fbInputProcessing.ReqAuto,
     GrantedManual   := fbControlUnit.GrantedManual,
     GrantedRemote   := fbControlUnit.GrantedRemote,
+	GrantedAuto		:= fbControlUnit.GrantedAuto,
     Active          := fbControlUnit.Active,
     State           := fbControlUnit.State,
     HB_Manual_OK    := GVL_HeartBeat.HB_Manual_OK,
@@ -2072,12 +2118,22 @@ xOk := NOT tonTimeout.Q;
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="ReqAuto">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="AckManual">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
                     <variable name="AckRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="AckAuto">
                       <type>
                         <BOOL />
                       </type>
@@ -2092,12 +2148,22 @@ xOk := NOT tonTimeout.Q;
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="RelAuto">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="HB_Manual_OK">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
                     <variable name="HB_Remote_OK">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="HB_Auto_OK">
                       <type>
                         <BOOL />
                       </type>
@@ -2138,6 +2204,11 @@ xOk := NOT tonTimeout.Q;
                       </type>
                     </variable>
                     <variable name="GrantedRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="GrantedAuto">
                       <type>
                         <BOOL />
                       </type>
@@ -2183,6 +2254,8 @@ END_IF
 IF Active = EControlMode.REMOTE AND NOT HB_Remote_OK THEN
 	IF HB_Manual_OK THEN 
 		Active := EControlMode.MANUAL; 
+	ELSIF HB_Auto_OK THEN //BLEV DETTA RÄTT?
+		Active := EControlMode.AUTO;
 	ELSE
 		Active := EControlMode.FAILSAFE; 
 	END_IF
@@ -2194,11 +2267,27 @@ END_IF
 IF Active = EControlMode.MANUAL AND NOT HB_Manual_OK THEN
 	IF HB_Remote_OK THEN 
 		Active := EControlMode.REMOTE; 
+	ELSIF HB_Auto_OK THEN //BLEV DETTA RÄTT?
+		Active := EControlMode.AUTO;
 	ELSE 
 		Active := EControlMode.FAILSAFE; 
 	END_IF
 	Pending := EPendingMode.NONE; 
 	State := ETransitionState.STABLE; 
+	RETURN;
+END_IF
+
+//If active Auto loses heartbeat
+IF Active = EControlMode.AUTO AND NOT HB_Auto_OK THEN
+	IF HB_Manual_OK THEN
+		Active := EControlMode.MANUAL;
+	ELSIF HB_Remote_OK THEN
+		Active := EControlMode.REMOTE;
+	ELSE
+		Active := EControlMode.FAILSAFE;
+	END_IF
+	Pending := EPendingMode.NONE;
+	State := ETransitionState.STABLE;
 	RETURN;
 END_IF
  
@@ -2208,50 +2297,65 @@ CASE State OF
 	Pending := EPendingMode.NONE; //No one is trying to take over
 	
 		//Manual station requests control
-		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.MANUAL AND
+		IF ReqManual AND NOT ReqRemote AND NOT ReqAuto AND Active &lt;&gt; EControlMode.MANUAL AND
 			HB_Manual_OK THEN 
 				Pending := EPendingMode.PENDING_MANUAL; 
 				State := ETransitionState.PENDING_ACK; 
 		//Remote station requests control
-		ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.REMOTE AND 
+		ELSIF ReqRemote AND NOT ReqManual AND NOT ReqAuto AND Active &lt;&gt; EControlMode.REMOTE AND 
 			HB_Remote_OK THEN
 				Pending := EPendingMode.PENDING_REMOTE; 
 				State := ETransitionState.PENDING_ACK; 
+		ELSIF ReqAuto AND NOT ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.AUTO AND 
+			HB_Auto_OK THEN
+				Pending := EPendingMode.PENDING_AUTO;
+				State  := ETransitionState.PENDING_ACK;
 		END_IF
 		
 		IF Velocity &gt; MaxVelocity OR SteeringAngle &gt; MaxSteering THEN 
 			//not allowed
-		ELSIF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.MANUAL AND HB_Manual_OK THEN 
+		ELSIF ReqManual AND NOT ReqRemote AND NOT ReqAuto AND Active &lt;&gt; EControlMode.MANUAL AND HB_Manual_OK THEN 
 			Pending := EPendingMode.PENDING_MANUAL; 
 			State := ETransitionState.PENDING_ACK; 
-		ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.REMOTE AND HB_Remote_OK THEN 
+		ELSIF ReqRemote AND NOT ReqManual AND NOT ReqAuto AND Active &lt;&gt; EControlMode.REMOTE AND HB_Remote_OK THEN 
 			Pending := EPendingMode.PENDING_REMOTE; 
 			State := ETransitionState.PENDING_ACK; 
+		ELSIF ReqAuto AND NOT ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.AUTO AND HB_Auto_OK THEN
+			Pending := EPendingMode.PENDING_AUTO;
+			State := ETransitionState.PENDING_ACK;
 		END_IF
 	
 	//Transition has been granted, waiting for acknowledgement from both control modes
 	ETransitionState.PENDING_ACK:
 		IF (GrantedManual AND (NOT ReqManual OR NOT HB_Manual_OK)) OR
-		   (GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) THEN
+		   (GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) OR
+		   (GrantedAuto AND (NOT ReqAuto OR NOT HB_Auto_OK)) THEN
 			Pending := EPendingMode.NONE;
 			State := ETransitionState.STABLE;
 		ELSE
 			Released := (Active = EControlMode.MANUAL AND RelManual) OR
-					   (Active = EControlMode.REMOTE AND RelRemote);
+					   (Active = EControlMode.REMOTE AND RelRemote) OR
+					  (Active = EControlMode.AUTO AND RelAuto);
 
 			PendingReady := (Pending = EPendingMode.PENDING_MANUAL AND AckManual) OR
-						   (Pending = EPendingMode.PENDING_REMOTE AND AckRemote);
+						   (Pending = EPendingMode.PENDING_REMOTE AND AckRemote) OR
+						  (Pending = EPendingMode.PENDING_AUTO AND AckAuto);
 
 			IF Released AND PendingReady THEN
 				// Convert EPendingMode to EControlMode
 				IF Pending = EPendingMode.PENDING_MANUAL THEN
 					Active := EControlMode.MANUAL;
 				ELSIF Pending = EPendingMode.PENDING_REMOTE THEN
-					Pending := EPendingMode.NONE;
-					State := ETransitionState.STABLE;
-					Released := FALSE;
-					ReqRemote := FALSE;
-					ReqManual := FALSE;
+					Active := EControlMode.REMOTE;
+				ELSIF Pending = EPendingMode.PENDING_AUTO THEN
+					Active := EControlMode.AUTO;
+				
+				Pending := EPendingMode.NONE;
+				State := ETransitionState.STABLE;
+				Released := FALSE;
+				ReqRemote := FALSE;
+				ReqManual := FALSE;
+				ReqAuto   := FALSE;
 				END_IF
 			END_IF
 		END_IF
@@ -2261,6 +2365,7 @@ END_CASE
 //Updated grant signals based on the current pending mode 
 GrantedManual := (Pending = EPendingMode.PENDING_MANUAL);
 GrantedRemote := (Pending = EPendingMode.PENDING_REMOTE);
+GrantedAuto   := (Pending = EPendingMode.PENDING_AUTO);
 		
 </xhtml>
                   </ST>
@@ -2286,6 +2391,11 @@ GrantedRemote := (Pending = EPendingMode.PENDING_REMOTE);
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="ReqAuto">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="AckManual">
                       <type>
                         <BOOL />
@@ -2296,12 +2406,22 @@ GrantedRemote := (Pending = EPendingMode.PENDING_REMOTE);
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="AckAuto">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="RelManual">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
                     <variable name="RelRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RelAuto">
                       <type>
                         <BOOL />
                       </type>
