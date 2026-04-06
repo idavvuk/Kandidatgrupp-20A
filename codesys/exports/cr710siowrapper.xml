@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-05T01:50:55.4790483" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-05T01:50:42.5769051" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-06T18:01:47.8265477" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-06T18:01:22.2239316" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1427,12 +1427,22 @@ END_IF</xhtml>
                 <BOOL />
               </type>
             </variable>
+            <variable name="HB_Auto_Signal">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="HB_Manual_OK">
               <type>
                 <BOOL />
               </type>
             </variable>
             <variable name="HB_Remote_OK">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="HB_Auto_OK">
               <type>
                 <BOOL />
               </type>
@@ -1462,6 +1472,11 @@ END_IF</xhtml>
                 <BOOL />
               </type>
             </variable>
+            <variable name="ReqAuto">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="AckManual">
               <type>
                 <BOOL />
@@ -1475,6 +1490,11 @@ END_IF</xhtml>
                 <BOOL />
               </type>
             </variable>
+            <variable name="AckAuto">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="RelManual">
               <type>
                 <BOOL />
@@ -1484,6 +1504,11 @@ END_IF</xhtml>
               </documentation>
             </variable>
             <variable name="RelRemote">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="RelAuto">
               <type>
                 <BOOL />
               </type>
@@ -1537,6 +1562,11 @@ END_IF</xhtml>
                 <BOOL />
               </type>
             </variable>
+            <variable name="GrantedAuto">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <variable name="Released">
               <type>
                 <BOOL />
@@ -1567,6 +1597,7 @@ END_IF</xhtml>
                       <value name="INIT" />
                       <value name="MANUAL" />
                       <value name="REMOTE" />
+                      <value name="AUTO" />
                       <value name="FAILSAFE" />
                     </values>
                   </enum>
@@ -1644,6 +1675,7 @@ END_IF</xhtml>
                       <value name="NONE" />
                       <value name="PENDING_MANUAL" />
                       <value name="PENDING_REMOTE" />
+                      <value name="PENDING_AUTO" />
                     </values>
                   </enum>
                 </baseType>
@@ -1666,6 +1698,12 @@ END_IF</xhtml>
                         <Name>PENDING_REMOTE</Name>
                         <Documentation>
                           <xhtml xmlns="http://www.w3.org/1999/xhtml">Pending remote</xhtml>
+                        </Documentation>
+                      </EnumValue>
+                      <EnumValue>
+                        <Name>PENDING_AUTO</Name>
+                        <Documentation>
+                          <xhtml xmlns="http://www.w3.org/1999/xhtml">Pending auto	</xhtml>
                         </Documentation>
                       </EnumValue>
                     </EnumValueDocumentation>
@@ -2072,12 +2110,22 @@ xOk := NOT tonTimeout.Q;
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="ReqAuto">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="AckManual">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
                     <variable name="AckRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="AckAuto">
                       <type>
                         <BOOL />
                       </type>
@@ -2092,12 +2140,22 @@ xOk := NOT tonTimeout.Q;
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="RelAuto">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="HB_Manual_OK">
                       <type>
                         <BOOL />
                       </type>
                     </variable>
                     <variable name="HB_Remote_OK">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="HB_Auto_OK">
                       <type>
                         <BOOL />
                       </type>
@@ -2149,6 +2207,11 @@ xOk := NOT tonTimeout.Q;
                       </type>
                     </variable>
                     <variable name="GrantedRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="GrantedAuto">
                       <type>
                         <BOOL />
                       </type>
@@ -2209,6 +2272,14 @@ IF Active = EControlMode.MANUAL AND NOT HB_Manual_OK THEN
 	State := ETransitionState.STABLE; 
 	RETURN;
 END_IF
+
+IF Active = EControlMode.AUTO AND NOT HB_Auto_OK THEN
+	Active := SEL(HB_Manual_OK, EControlMode.FAILSAFE, EControlMode.MANUAL);
+	Pending := EPendingMode.NONE;
+	State := ETransitionState.STABLE;
+	RETURN;
+END_IF
+
  
 CASE State OF 
 	//Stable: No transition is currently in progress
@@ -2216,15 +2287,19 @@ CASE State OF
 	Pending := EPendingMode.NONE; //No one is trying to take over
 	
 		//Manual station requests control
-		IF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.MANUAL AND
+		IF ReqManual AND NOT ReqRemote AND NOT ReqAuto AND Active &lt;&gt; EControlMode.MANUAL AND
 			HB_Manual_OK THEN 
 				Pending := EPendingMode.PENDING_MANUAL; 
 				State := ETransitionState.PENDING_ACK; 
 		//Remote station requests control
-		ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.REMOTE AND 
+		ELSIF ReqRemote AND NOT ReqManual AND NOT ReqAuto AND Active &lt;&gt; EControlMode.REMOTE AND 
 			HB_Remote_OK THEN
 				Pending := EPendingMode.PENDING_REMOTE; 
-				State := ETransitionState.PENDING_ACK; 
+				State := ETransitionState.PENDING_ACK;
+		ELSIF ReqAuto AND NOT ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.AUTO AND
+			HB_Auto_OK THEN
+				Pending := EPendingMode.PENDING_AUTO;
+				State := ETransitionState.PENDING_ACK;
 		END_IF
 		
 		IF Velocity &gt; MaxVelocity OR SteeringAngle &gt; MaxSteering THEN 
@@ -2240,15 +2315,18 @@ CASE State OF
 	//Transition has been granted, waiting for acknowledgement from both control modes
 	ETransitionState.PENDING_ACK:
 		IF (GrantedManual AND (NOT ReqManual OR NOT HB_Manual_OK)) OR
-		   (GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) THEN
+		   (GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) OR 
+		   (GrantedAuto AND (NOT ReqAuto OR NOT HB_Auto_OK)) THEN
 			Pending := EPendingMode.NONE;
 			State := ETransitionState.STABLE;
 		ELSE
 			Released := (Active = EControlMode.MANUAL AND RelManual) OR
-					   (Active = EControlMode.REMOTE AND RelRemote);
+					   (Active = EControlMode.REMOTE AND RelRemote) OR
+					   (Active = EControlMode.AUTO AND RelAuto);
 
 			PendingReady := (Pending = EPendingMode.PENDING_MANUAL AND AckManual) OR
-						   (Pending = EPendingMode.PENDING_REMOTE AND AckRemote);
+						   (Pending = EPendingMode.PENDING_REMOTE AND AckRemote) OR
+							(Pending = EPendingMode.PENDING_AUTO AND AckAuto);
 
 			IF Released AND PendingReady THEN
 				// Convert EPendingMode to EControlMode
@@ -3979,9 +4057,31 @@ END_IF</xhtml>
     </configurations>
   </instances>
   <addData>
+    <data name="http://www.3s-software.com/plcopenxml/libraries" handleUnknown="implementation">
+      <Libraries>
+        <Library Name="#System_VisuElems" Namespace="VisuElems" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElems, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemMeter" Namespace="VisuElemMeter" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemMeter, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsSpecialControls" Namespace="VisuElemsSpecialControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsSpecialControls, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsWinControls" Namespace="VisuElemsWinControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsWinControls, 3.5.11.20 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemTextEditor" Namespace="VisuElemTextEditor" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTextEditor, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemTrace" Namespace="VisuElemTrace" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTrace, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuNativeControl" Namespace="VisuNativeControl" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuNativeControl, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsAlarm" Namespace="VisuElemsAlarm" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsAlarm, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemCamDisplayer" Namespace="VisuElemCamDisplayer" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemCamDisplayer, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElem3DPath" Namespace="VisuElem3DPath" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElem3DPath, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#System_VisuElemsDateTime" Namespace="VisuElemsDateTime" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsDateTime, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <Library Name="#system_visuinputs" Namespace="visuinputs" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="visuinputs, 3.5.10.0 (system)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>c2bac552-9807-4914-8bf7-a2144fae23d0</ObjectId>
+          </data>
+        </addData>
+      </Libraries>
+    </data>
     <data name="http://www.3s-software.com/plcopenxml/projectstructure" handleUnknown="discard">
       <ProjectStructure>
         <Object Name="CR710S" ObjectId="8a4045b1-25d3-40ed-a775-5d66b77f864d" />
+        <Object Name="Library Manager" ObjectId="c2bac552-9807-4914-8bf7-a2144fae23d0" />
         <Object Name="SafetyPLC" ObjectId="74f8a2c6-887a-412a-b40b-5e4f58755393">
           <Object Name="Communication" ObjectId="8eae2e73-2e8d-4ac9-b1fb-3499e322d2ff">
             <Object Name="CAN" ObjectId="cd6dba6a-8f1c-4690-a8c5-d085ec03d8a2" />
