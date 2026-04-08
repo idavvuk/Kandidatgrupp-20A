@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-06T20:25:56.7565168" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-06T20:25:23.6031854" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-08T11:29:23.7671258" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-08T11:28:55.8067194" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2286,14 +2286,74 @@ xOk := NOT tonTimeout.Q;
                         <derived name="TON" />
                       </type>
                     </variable>
+                    <variable name="xReqRemote">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
+                    <variable name="xReqManual">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
+                    <variable name="xReqAuto">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
+                    <variable name="xReqRemotePulse">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
+                    <variable name="xReqManualPulse">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
+                    <variable name="xReqAutoPulse">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
                   <ST>
-                    <xhtml xmlns="http://www.w3.org/1999/xhtml">//Initial state set
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">
+xReqRemotePulse := ReqRemote AND NOT xReqRemote; 
+xReqManualPulse := ReqManual AND NOT xReqManual; 
+xReqAuto := ReqAuto AND NOT xReqAuto; 
+
+xReqRemote := ReqRemote; 
+xReqManual := ReqManual; 
+xReqAuto := ReqAuto; 
+
+
+
+//Initial state set
 IF Active = EControlMode.INIT THEN 
 	Active := EControlMode.MANUAL;
 END_IF
+
 
 //If in FailSafe then we block everything else
 IF Active = EControlMode.FAILSAFE THEN 
@@ -2302,8 +2362,9 @@ IF Active = EControlMode.FAILSAFE THEN
 	RETURN; 
 END_IF
 
+
 IF Active = EControlMode.REMOTE AND NOT HB_Remote_OK THEN
-	Active := SEL(HB_Manual_OK, EControlMode.FAILSAFE, EControlMode.MANUAL); 
+	Active := SEL(HB_Manual_OK, EControlMode.FAILSAFE, EControlMode.MANUAL);  //ÄNDRA FRÅN SEL - 
 	Pending := EPendingMode.NONE; 
 	State := ETransitionState.STABLE; 
 	RETURN; 
@@ -2330,16 +2391,16 @@ CASE State OF
 	Pending := EPendingMode.NONE; //No one is trying to take over
 	
 		//Manual station requests control
-		IF ReqManual AND NOT ReqRemote AND NOT ReqAuto AND Active &lt;&gt; EControlMode.MANUAL AND
+		IF xReqManualPulse AND NOT xReqRemotePulse AND NOT xReqAutoPulse AND Active &lt;&gt; EControlMode.MANUAL AND
 			HB_Manual_OK THEN 
 				Pending := EPendingMode.PENDING_MANUAL; 
 				State := ETransitionState.PENDING_ACK; 
 		//Remote station requests control
-		ELSIF ReqRemote AND NOT ReqManual AND NOT ReqAuto AND Active &lt;&gt; EControlMode.REMOTE AND 
+		ELSIF xReqRemotePulse AND NOT xReqManualPulse AND NOT xReqAutoPulse AND Active &lt;&gt; EControlMode.REMOTE AND 
 			HB_Remote_OK THEN
 				Pending := EPendingMode.PENDING_REMOTE; 
 				State := ETransitionState.PENDING_ACK;
-		ELSIF ReqAuto AND NOT ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.AUTO AND
+		ELSIF xReqAutoPulse AND NOT xReqManualPulse AND NOT xReqRemotePulse AND Active &lt;&gt; EControlMode.AUTO AND
 			HB_Auto_OK THEN
 				Pending := EPendingMode.PENDING_AUTO;
 				State := ETransitionState.PENDING_ACK;
@@ -2347,10 +2408,10 @@ CASE State OF
 		
 		IF Velocity &gt; MaxVelocity OR SteeringAngle &gt; MaxSteering THEN 
 			//not allowed
-		ELSIF ReqManual AND NOT ReqRemote AND Active &lt;&gt; EControlMode.MANUAL AND HB_Manual_OK THEN 
+		ELSIF xReqManualPulse AND NOT xReqRemotePulse AND Active &lt;&gt; EControlMode.MANUAL AND HB_Manual_OK THEN 
 			Pending := EPendingMode.PENDING_MANUAL; 
 			State := ETransitionState.PENDING_ACK; 
-		ELSIF ReqRemote AND NOT ReqManual AND Active &lt;&gt; EControlMode.REMOTE AND HB_Remote_OK THEN 
+		ELSIF xReqRemotePulse AND NOT xReqManualPulse AND Active &lt;&gt; EControlMode.REMOTE AND HB_Remote_OK THEN 
 			Pending := EPendingMode.PENDING_REMOTE; 
 			State := ETransitionState.PENDING_ACK; 
 		END_IF
@@ -2420,9 +2481,8 @@ CASE State OF
 				State := ETransitionState.STABLE; 
 				tAckTimer(IN := FALSE); 
 				Released := FALSE; 
-				ReqRemote := FALSE; 
-				ReqManual := FALSE; 
-				ReqAuto	  := FALSE;
+					//ÄNDRA HÄR 
+				
 			END_IF
 		END_IF
 		
@@ -4217,31 +4277,9 @@ END_IF</xhtml>
     </configurations>
   </instances>
   <addData>
-    <data name="http://www.3s-software.com/plcopenxml/libraries" handleUnknown="implementation">
-      <Libraries>
-        <Library Name="#System_VisuElems" Namespace="VisuElems" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElems, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemMeter" Namespace="VisuElemMeter" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemMeter, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsSpecialControls" Namespace="VisuElemsSpecialControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsSpecialControls, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsWinControls" Namespace="VisuElemsWinControls" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsWinControls, 3.5.11.20 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemTextEditor" Namespace="VisuElemTextEditor" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTextEditor, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemTrace" Namespace="VisuElemTrace" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemTrace, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuNativeControl" Namespace="VisuNativeControl" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuNativeControl, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsAlarm" Namespace="VisuElemsAlarm" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsAlarm, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemCamDisplayer" Namespace="VisuElemCamDisplayer" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemCamDisplayer, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElem3DPath" Namespace="VisuElem3DPath" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElem3DPath, 3.5.10.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#System_VisuElemsDateTime" Namespace="VisuElemsDateTime" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="VisuElemsDateTime, 3.5.11.0 (System)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <Library Name="#system_visuinputs" Namespace="visuinputs" HideWhenReferencedAsDependency="false" PublishSymbolsInContainer="false" SystemLibrary="true" LinkAllContent="false" DefaultResolution="visuinputs, 3.5.10.0 (system)" ResolverGuid="2717eb6a-dd07-4c66-8d8d-cacebd7b18ae" />
-        <addData>
-          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
-            <ObjectId>c2bac552-9807-4914-8bf7-a2144fae23d0</ObjectId>
-          </data>
-        </addData>
-      </Libraries>
-    </data>
     <data name="http://www.3s-software.com/plcopenxml/projectstructure" handleUnknown="discard">
       <ProjectStructure>
         <Object Name="CR710S" ObjectId="8a4045b1-25d3-40ed-a775-5d66b77f864d" />
-        <Object Name="Library Manager" ObjectId="c2bac552-9807-4914-8bf7-a2144fae23d0" />
         <Object Name="SafetyPLC" ObjectId="74f8a2c6-887a-412a-b40b-5e4f58755393">
           <Object Name="Communication" ObjectId="8eae2e73-2e8d-4ac9-b1fb-3499e322d2ff">
             <Object Name="CAN" ObjectId="cd6dba6a-8f1c-4690-a8c5-d085ec03d8a2" />
