@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-08T13:22:16.227361" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-08T13:21:47.7288383" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-08T15:13:16.6534302" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-08T15:12:48.5631555" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2457,36 +2457,36 @@ CASE State OF
 		
 		
 		//cancel if requesting station is dropped or lost its heartbeat
-		//IF (GrantedManual AND (NOT ReqManual OR NOT HB_Manual_OK)) OR 
-			//(GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) THEN
-			//Pending := EPendingMode.NONE; 
-			//State := ETransitionState.STABLE; 
-			//tAckTimer (IN := FALSE); // Reset timer
-		//ELSE 
-			//Released := (Active = EControlMode.MANUAL AND RelManual) OR 
-			//(Active = EControlMode.REMOTE AND RelRemote) OR
-			//(Active = EControlMode.AUTO AND RelAuto); 
+		IF (GrantedManual AND (NOT ReqManual OR NOT HB_Manual_OK)) OR 
+			(GrantedRemote AND (NOT ReqRemote OR NOT HB_Remote_OK)) THEN
+			Pending := EPendingMode.NONE; 
+			State := ETransitionState.STABLE; 
+			tAckTimer (IN := FALSE); // Reset timer
+		ELSE 
+			Released := (Active = EControlMode.MANUAL AND RelManual) OR 
+			(Active = EControlMode.REMOTE AND RelRemote) OR
+			(Active = EControlMode.AUTO AND RelAuto); 
 			
-			//PendingReady := (Pending = EPendingMode.PENDING_MANUAL AND AckManual) OR 
-			//(Pending = EPendingMode.PENDING_REMOTE AND AckRemote) OR
-			//(PEnding = EPendingMode.PENDING_AUTO AND AckAuto); 
+			PendingReady := (Pending = EPendingMode.PENDING_MANUAL AND AckManual) OR 
+			(Pending = EPendingMode.PENDING_REMOTE AND AckRemote) OR
+			(PEnding = EPendingMode.PENDING_AUTO AND AckAuto); 
 			
-			//IF Released AND PendingReady THEN 
-				//IF Pending = EPendingMode.PENDING_MANUAL THEN 
-					//Active := EControlMode.MANUAL; 
-				//ELSIF Pending = EPendingMode.PENDING_REMOTE THEN 
-					//Active := EControlMode.REMOTE; 
-				//ELSIF Pending := EPendingMode.PENDING_AUTO THEN
-					//Active := EControlMode.AUTO;
-				//END_IF
-				//Pending := EPendingMode.NONE; 
-				//State := ETransitionState.STABLE; 
-				//tAckTimer(IN := FALSE); 
-				//Released := FALSE; 
+			IF Released AND PendingReady THEN 
+				IF Pending = EPendingMode.PENDING_MANUAL THEN 
+					Active := EControlMode.MANUAL; 
+				ELSIF Pending = EPendingMode.PENDING_REMOTE THEN 
+					Active := EControlMode.REMOTE; 
+				ELSIF Pending := EPendingMode.PENDING_AUTO THEN
+					Active := EControlMode.AUTO;
+				END_IF
+				Pending := EPendingMode.NONE; 
+				State := ETransitionState.STABLE; 
+				tAckTimer(IN := FALSE); 
+				Released := FALSE; 
 					//ÄNDRA HÄR 
 				
-			//END_IF
-	//END_IF
+			END_IF
+	END_IF
 		
 END_CASE
 
@@ -3070,6 +3070,36 @@ END_IF</xhtml>
                 <addData>
                   <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
                     <ObjectId>88b66225-4fdc-4441-be38-787ded55e262</ObjectId>
+                  </data>
+                </addData>
+              </pou>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
+              <pou name="Pre_TakeOver" pouType="functionBlock">
+                <interface />
+                <body>
+                  <ST>
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml" />
+                  </ST>
+                </body>
+                <addData>
+                  <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+                    <ObjectId>22915457-3402-4466-ac0d-5a574c71762a</ObjectId>
+                  </data>
+                </addData>
+              </pou>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/pou" handleUnknown="implementation">
+              <pou name="Validate_TakeOver" pouType="functionBlock">
+                <interface />
+                <body>
+                  <ST>
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml" />
+                  </ST>
+                </body>
+                <addData>
+                  <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+                    <ObjectId>aeb92afc-723e-4312-b7c4-f0ac11fff118</ObjectId>
                   </data>
                 </addData>
               </pou>
@@ -4338,6 +4368,8 @@ END_IF</xhtml>
             <Object Name="GVL_State" ObjectId="5c4a4848-76ab-49ed-92a5-267a71e47b4e" />
             <Object Name="IntegrityCheck" ObjectId="263bd72f-75ce-487e-b3b8-ec7f9d153e59" />
             <Object Name="DecisionLogger" ObjectId="88b66225-4fdc-4441-be38-787ded55e262" />
+            <Object Name="Pre_TakeOver" ObjectId="22915457-3402-4466-ac0d-5a574c71762a" />
+            <Object Name="Validate_TakeOver" ObjectId="aeb92afc-723e-4312-b7c4-f0ac11fff118" />
           </Object>
         </Object>
         <Object Name="Project Information" ObjectId="11c0fc3a-9bcf-4dd8-ac38-efb93363e521" />
