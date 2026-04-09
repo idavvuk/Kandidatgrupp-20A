@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-08T16:56:14.2212234" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-08T16:55:53.8890985" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-09T14:37:03.6415634" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-09T14:36:29.6805378" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2336,6 +2336,11 @@ xOk := NOT tonTimeout.Q;
                         <simpleValue value="FALSE" />
                       </initialValue>
                     </variable>
+                    <variable name="ActiveReady">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -2390,16 +2395,16 @@ CASE State OF
 		IF xReqManualPulse AND NOT xReqRemotePulse AND NOT xReqAutoPulse AND Active &lt;&gt; EControlMode.MANUAL AND
 			HB_Manual_OK THEN 
 				Pending := EPendingMode.PENDING_MANUAL; 
-				State := ETransitionState.PENDING_ACK; 
+				State := ETransitionState.VALIDATE_TAKEOVER; 
 		//Remote station requests control
 		ELSIF xReqRemotePulse AND NOT xReqManualPulse AND NOT xReqAutoPulse AND Active &lt;&gt; EControlMode.REMOTE AND 
 			HB_Remote_OK THEN
 				Pending := EPendingMode.PENDING_REMOTE; 
-				State := ETransitionState.PENDING_ACK;
+				State := ETransitionState.VALIDATE_TAKEOVER;
 		ELSIF xReqAutoPulse AND NOT xReqManualPulse AND NOT xReqRemotePulse AND Active &lt;&gt; EControlMode.AUTO AND
 			HB_Auto_OK THEN
 				Pending := EPendingMode.PENDING_AUTO;
-				State := ETransitionState.PENDING_ACK;
+				State := ETransitionState.VALIDATE_TAKEOVER;
 		ELSE
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
@@ -2424,22 +2429,49 @@ CASE State OF
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
 			tAckTimer (IN := FALSE); // Reset timer
+			ActiveReady := FALSE;
+			PendingReady := FALSE;
+			Released := FALSE;
 			
 		ELSIF tAckTimer.Q THEN 
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
 			tAckTimer(IN := FALSE, PT := MaxAckTime); 
+			ActiveReady := FALSE;
+			PendingReady := FALSE;
+			Released := FALSE;
 			
 		ELSE
-			Released := (Active = EControlMode.MANUAL AND RelManual) OR 
-			(Active = EControlMode.REMOTE AND RelRemote) OR
-			(Active = EControlMode.AUTO AND RelAuto); 
+			//ACK from active station
+			ActiveReady := FALSE;
+				IF Active = EControlMode.MANUAL THEN
+					ActiveReady := AckManual;
+				ELSIF Active = EControlMode.REMOTE THEN
+					ActiveReady := AckRemote;
+				ELSIF Active = EControlMode.AUTO THEN
+					ActiveReady := AckAuto;
+				END_IF
+			//Release from active station
+			Released := FALSE;
+				IF Active = EControlMode.MANUAL THEN
+					Released := RelManual;
+				ELSIF Active = EControlMode.REMOTE THEN
+					Released := RelRemote;
+				ELSIF Active = EControlMode.AUTO THEN
+					Released := RelAuto;
+				END_IF
 			
-			PendingReady := (Pending = EPendingMode.PENDING_MANUAL AND AckManual) OR 
-			(Pending = EPendingMode.PENDING_REMOTE AND AckRemote) OR
-			(PEnding = EPendingMode.PENDING_AUTO AND AckAuto); 
-		
-			IF Released AND PendingReady THEN 
+			//ACK from pending station
+			PendingReady := FALSE;
+				IF Pending = EPendingMode.PENDING_MANUAL THEN
+					PendingReady := AckManual;
+				ELSIF Pending = EPendingMode.PENDING_REMOTE THEN
+					PendingReady := AckRemote;
+				ELSIF Pending = EPendingMode.PENDING_AUTO THEN
+					PendingReady := AckAuto;
+				END_IF
+
+			IF Released AND PendingReady AND ActiveReady THEN 
 				IF Pending = EPendingMode.PENDING_MANUAL THEN 
 					Active := EControlMode.MANUAL; 
 				ELSIF Pending = EPendingMode.PENDING_REMOTE THEN 
@@ -2449,7 +2481,9 @@ CASE State OF
 				END_IF
 				Pending := EPendingMode.NONE; 
 				State := ETransitionState.STABLE; 
-				tAckTimer(IN := FALSE); 
+				tAckTimer(IN := FALSE, PT := MaxAckTime); 
+				ActiveReady := FALSE;
+				PendingReady := FALSE;
 				Released := FALSE; 
 					 
 				
