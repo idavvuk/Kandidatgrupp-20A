@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-09T14:37:03.6415634" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-09T14:36:29.6805378" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-09T14:50:13.6211726" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-09T14:49:49.0219277" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2243,8 +2243,11 @@ xOk := NOT tonTimeout.Q;
                         <derived name="EControlMode" />
                       </type>
                       <initialValue>
-                        <simpleValue value="EControlMode.MANUAL" />
+                        <simpleValue value="EControlMode.INIT" />
                       </initialValue>
+                      <documentation>
+                        <xhtml xmlns="http://www.w3.org/1999/xhtml">Ändrade från manual-&gt;init </xhtml>
+                      </documentation>
                     </variable>
                     <variable name="GrantedManual">
                       <type>
@@ -2257,16 +2260,6 @@ xOk := NOT tonTimeout.Q;
                       </type>
                     </variable>
                     <variable name="GrantedAuto">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="Released">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="PendingReady">
                       <type>
                         <BOOL />
                       </type>
@@ -2337,6 +2330,16 @@ xOk := NOT tonTimeout.Q;
                       </initialValue>
                     </variable>
                     <variable name="ActiveReady">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="Released">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="PendingReady">
                       <type>
                         <BOOL />
                       </type>
