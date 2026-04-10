@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-09T14:50:13.6211726" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-09T14:49:49.0219277" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-10T10:48:15.5859447" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-10T10:48:03.6356807" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2344,6 +2344,30 @@ xOk := NOT tonTimeout.Q;
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="xPendingManualLatch">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
+                    <variable name="xPendingRemoteLatch">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
+                    <variable name="xPendingAutoLatch">
+                      <type>
+                        <BOOL />
+                      </type>
+                      <initialValue>
+                        <simpleValue value="FALSE" />
+                      </initialValue>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -2382,36 +2406,39 @@ IF (Active = EControlMode.REMOTE AND NOT HB_Remote_OK) OR
 END_IF 
  
 CASE State OF 
-	//Stable: No transition is currently in progress
 	ETransitionState.STABLE: 
 		Pending := EPendingMode.NONE; //No one is trying to take over
 		tAckTimer(IN := FALSE, PT := MaxAckTime);
 		
-		IF xReqManualPulse OR xReqRemotePulse OR xReqAutoPulse THEN 
+		IF xReqManualPulse THEN 
+			xPendingManualLatch := TRUE; 
+			State := ETransitionState.PRE_TAKEOVER; 
+		ELSIF xReqRemotePulse THEN 
+			xPendingRemoteLatch := TRUE; 
+			State := ETransitionState.PRE_TAKEOVER; 
+		ELSIF xReqAutoPulse THEN 
+			xPendingAutoLatch := TRUE; 
 			State := ETransitionState.PRE_TAKEOVER; 
 		END_IF
 	
 	ETransitionState.PRE_TAKEOVER:	
-	
-		
-		//Manual station requests control
-		IF xReqManualPulse AND NOT xReqRemotePulse AND NOT xReqAutoPulse AND Active &lt;&gt; EControlMode.MANUAL AND
-			HB_Manual_OK THEN 
-				Pending := EPendingMode.PENDING_MANUAL; 
-				State := ETransitionState.VALIDATE_TAKEOVER; 
-		//Remote station requests control
-		ELSIF xReqRemotePulse AND NOT xReqManualPulse AND NOT xReqAutoPulse AND Active &lt;&gt; EControlMode.REMOTE AND 
-			HB_Remote_OK THEN
-				Pending := EPendingMode.PENDING_REMOTE; 
-				State := ETransitionState.VALIDATE_TAKEOVER;
-		ELSIF xReqAutoPulse AND NOT xReqManualPulse AND NOT xReqRemotePulse AND Active &lt;&gt; EControlMode.AUTO AND
-			HB_Auto_OK THEN
-				Pending := EPendingMode.PENDING_AUTO;
-				State := ETransitionState.VALIDATE_TAKEOVER;
-		ELSE
+		IF xPendingManualLatch AND Active &lt;&gt; EControlMode.MANUAL AND HB_Manual_OK THEN 
+			Pending := EPendingMode.PENDING_MANUAL; 
+			State := ETransitionState.VALIDATE_TAKEOVER; 
+		ELSIF xPendingRemoteLatch AND Active &lt;&gt; EControlMode.REMOTE AND HB_Remote_OK THEN 
+			Pending := EPendingMode.PENDING_REMOTE; 
+			State := ETransitionState.VALIDATE_TAKEOVER; 
+		ELSIF xPendingAutoLatch AND Active &lt;&gt; EControlMode.REMOTE AND HB_Auto_OK THEN 
+			Pending := EPendingMode.PENDING_AUTO; 
+			State 	:= ETransitionState.VALIDATE_TAKEOVER; 
+		ELSE 
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
 		END_IF
+		xPendingManualLatch := FALSE; 
+		xPendingRemoteLatch := FALSE; 
+		xPendingAutoLatch 	:= FALSE; 
+		
 		
 		//IF Velocity &gt; MaxVelocity OR SteeringAngle &gt; MaxSteering THEN 
 			//not allowed
