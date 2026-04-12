@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-12T18:02:21.1921321" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-12T18:02:10.9901164" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-12T19:03:26.3889342" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-12T19:03:16.2857969" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1594,6 +1594,11 @@ END_IF</xhtml>
                 <BOOL />
               </type>
             </variable>
+            <variable name="RejectedRequestFlag">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
             <addData>
               <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
                 <Attributes>
@@ -2374,6 +2379,11 @@ xOk := NOT tonTimeout.Q;
                         <simpleValue value="FALSE" />
                       </initialValue>
                     </variable>
+                    <variable name="rejectedRequestFlag">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -2459,6 +2469,7 @@ CASE State OF
 		tAckTimer(IN := FALSE, PT := MaxAckTime);
 		
 	ETransitionState.STABLE: 
+		RejectedRequestFlag := FALSE; 
 		Pending := EPendingMode.NONE; //No one is trying to take over
 		tAckTimer(IN := FALSE, PT := MaxAckTime);
 		
@@ -2486,6 +2497,7 @@ CASE State OF
 		ELSE 
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
+			rejectedRequestFlag := TRUE; 
 		END_IF
 		xPendingManualLatch := FALSE; 
 		xPendingRemoteLatch := FALSE; 
@@ -3189,6 +3201,11 @@ HB_Auto_Out	  := HB_Auto_Signal;</xhtml>
                         <derived name="ETransitionState" />
                       </type>
                     </variable>
+                    <variable name="RejectedRequestFlag">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                   </inputVars>
                   <localVars>
                     <variable name="LastActive">
@@ -3206,6 +3223,11 @@ HB_Auto_Out	  := HB_Auto_Signal;</xhtml>
                         <derived name="ETransitionState" />
                       </type>
                     </variable>
+                    <variable name="LastRejectedrequest">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                   </localVars>
                 </interface>
                 <body>
@@ -3220,6 +3242,13 @@ HB_Auto_Out	  := HB_Auto_Signal;</xhtml>
 	LastState := State; 
 END_IF
 
+IF RejectedRequestFlag AND NOT LastRejectedrequest THEN
+	GVL_State.RejectedRequestFlag := TRUE; //log the rejection
+ELSE 
+	GVL_State.RejectedRequestFlag := FALSE; 
+END_IF
+
+Lastrejectedrequest := RejectedRequestFlag; 
 </xhtml>
                   </ST>
                 </body>
