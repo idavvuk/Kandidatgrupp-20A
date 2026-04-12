@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-12T14:29:14.667658" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-12T14:28:54.8536245" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-12T18:02:21.1921321" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-12T18:02:10.9901164" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2891,6 +2891,7 @@ IF Active = EControlMode.INIT OR Active = EControlMode.FAILSAFE THEN
 	OUT_Pending		  := FALSE; 
 	OUT_PendingReady  := FALSE; 
 	OUT_Released	  := FALSE; 
+	OUT_FailSafe 	  := FALSE; 
 ELSE
 	OUT_GrantedManual := GrantedManual; 
 	OUT_GrantedRemote := GrantedRemote; 
@@ -2898,12 +2899,14 @@ ELSE
 	OUT_ActiveManual  := (Active = EControlMode.MANUAL); 
 	OUT_ActiveRemote  := (Active = EControlMode.REMOTE);
 	OUT_ActiveAuto    := (Active = EControlMode.AUTO);
-	OUT_Pending		  := (State = ETransitionState.VALIDATE_TAKEOVER); 
+	OUT_Pending		  := (State = ETransitionState.VALIDATE_TAKEOVER) OR 
+						 (State = EtransitionState.PRE_TAKEOVER); 
 	OUT_PendingReady  := PendingReady; 
 	OUT_Released	  := Released; 
+	OUT_FailSafe	  := FALSE;  
 END_IF
 
-OUT_FailSafe	  :=(Active = EControlMode.FAILSAFE);
+//Heartbeat should be visible regardless of mode we're in
 OUT_NoHB_Manual   := NOT HB_Manual_OK; 
 OUT_NoHB_Remote   := NOT HB_Remote_OK; 
 OUT_NoHB_Auto	  := NOT HB_Auto_OK;
