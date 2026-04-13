@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-12T19:03:26.3889342" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-12T19:03:16.2857969" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-13T09:49:31.7470118" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-13T09:49:16.2345801" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -1599,6 +1599,16 @@ END_IF</xhtml>
                 <BOOL />
               </type>
             </variable>
+            <variable name="RejectionReason">
+              <type>
+                <string />
+              </type>
+            </variable>
+            <variable name="LastActiveBeforeTransition">
+              <type>
+                <derived name="EControlMode" />
+              </type>
+            </variable>
             <addData>
               <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
                 <Attributes>
@@ -2379,9 +2389,14 @@ xOk := NOT tonTimeout.Q;
                         <simpleValue value="FALSE" />
                       </initialValue>
                     </variable>
-                    <variable name="rejectedRequestFlag">
+                    <variable name="RejectedRequestFlag">
                       <type>
                         <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RejectionReason">
+                      <type>
+                        <string />
                       </type>
                     </variable>
                   </localVars>
@@ -2472,6 +2487,8 @@ CASE State OF
 		RejectedRequestFlag := FALSE; 
 		Pending := EPendingMode.NONE; //No one is trying to take over
 		tAckTimer(IN := FALSE, PT := MaxAckTime);
+		RejectedRequestFlag := FALSE; 
+		RejectionReason := ''; 
 		
 		IF xReqManualPulse THEN 
 			xPendingManualLatch := TRUE; 
@@ -2497,7 +2514,18 @@ CASE State OF
 		ELSE 
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
-			rejectedRequestFlag := TRUE; 
+			RejectedRequestFlag := TRUE; 
+			IF (xPendingManualLatch AND NOT HB_Manual_OK) OR 
+				(xPendingRemoteLatch AND NOT HB_Remote_OK) OR 
+				(xPendingAutoLatch AND NOT HB_Auto_OK) THEN 
+					RejectionReason := 'Request rejected: Heartbeat failure'; 
+			ELSIF (xPendingManualLatch AND Active = EControlMode.MANUAL) OR 
+				(xPendingRemoteLatch AND Active = EControlMode.REMOTE) OR
+				(xPendingAutoLatch AND Active = EControlMode.AUTO) THEN 
+					RejectionReason := 'Request rejection: Station already active'; 
+			ELSE 
+					RejectionReason := 'Request rejected: Conflicting request'; 
+			END_IF
 		END_IF
 		xPendingManualLatch := FALSE; 
 		xPendingRemoteLatch := FALSE; 
@@ -2528,6 +2556,8 @@ CASE State OF
 	//		ActiveReady := FALSE;
 			PendingReady := FALSE;
 			Released := FALSE;
+			RejectedRequestFlag := TRUE; 
+			RejectionReason := 'request rejected: Heartbeat loss during handover'; 
 			
 		ELSIF tAckTimer.Q THEN 
 			Pending := EPendingMode.NONE; 
@@ -2536,6 +2566,8 @@ CASE State OF
 		//	ActiveReady := FALSE;
 			PendingReady := FALSE;
 			Released := FALSE;
+			RejectedRequestFlag := TRUE; 
+			RejectionReason := 'Request rejected: acknowledgement timeout'; 
 			
 		ELSE
 		//ACK from active station
@@ -2579,6 +2611,8 @@ CASE State OF
 					GrantedManual 	:= FALSE;
 					GrantedRemote 	:= FALSE;
 					GrantedAuto 	:= FALSE;
+					RejectedRequestFlag := TRUE; 
+					RejectionReason := 'Request rejected: Integrity violation, pending matches active';
 					RETURN;		
 			END_IF
 			IF Released AND PendingReady THEN 
@@ -3206,6 +3240,11 @@ HB_Auto_Out	  := HB_Auto_Signal;</xhtml>
                         <BOOL />
                       </type>
                     </variable>
+                    <variable name="RejectionReason">
+                      <type>
+                        <string />
+                      </type>
+                    </variable>
                   </inputVars>
                   <localVars>
                     <variable name="LastActive">
@@ -3223,7 +3262,7 @@ HB_Auto_Out	  := HB_Auto_Signal;</xhtml>
                         <derived name="ETransitionState" />
                       </type>
                     </variable>
-                    <variable name="LastRejectedrequest">
+                    <variable name="LastRejectedRequest">
                       <type>
                         <BOOL />
                       </type>
@@ -3233,6 +3272,7 @@ HB_Auto_Out	  := HB_Auto_Signal;</xhtml>
                 <body>
                   <ST>
                     <xhtml xmlns="http://www.w3.org/1999/xhtml">IF Active &lt;&gt; LastActive OR Pending &lt;&gt; LastPending OR State &lt;&gt; LastState THEN 
+	GVL_State.LastActiveBeforeTransition := LastActive; 
 	GVL_State.Active := Active; 
 	GVL_State.Pending := Pending; 
 	GVL_State.State := State;
@@ -3242,13 +3282,13 @@ HB_Auto_Out	  := HB_Auto_Signal;</xhtml>
 	LastState := State; 
 END_IF
 
-IF RejectedRequestFlag AND NOT LastRejectedrequest THEN
+IF RejectedRequestFlag AND NOT LastRejectedRequest THEN
 	GVL_State.RejectedRequestFlag := TRUE; //log the rejection
+	GVL_State.RejectionReason := RejectionReason; 
 ELSE 
 	GVL_State.RejectedRequestFlag := FALSE; 
 END_IF
-
-Lastrejectedrequest := RejectedRequestFlag; 
+LastRejectedRequest := RejectedRequestFlag; 
 </xhtml>
                   </ST>
                 </body>
