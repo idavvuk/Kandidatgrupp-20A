@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-13T14:30:59.5291991" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-13T14:30:36.343632" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-13T14:36:17.717258" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-13T14:35:57.4861655" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -3138,7 +3138,6 @@ IF Active = EControlMode.INIT OR Active = EControlMode.FAILSAFE THEN
 	OUT_Pending		  := FALSE; 
 	OUT_PendingReady  := FALSE; 
 	OUT_Released	  := FALSE; 
-	OUT_FailSafe 	  := FALSE; 
 ELSE
 	OUT_GrantedManual := GrantedManual; 
 	OUT_GrantedRemote := GrantedRemote; 
@@ -3149,11 +3148,11 @@ ELSE
 	OUT_ActiveAuto    := (Active = EControlMode.AUTO);
 	OUT_ActiveRemoteMobile := (Active = EControlMode.REMOTE_MOBILE); 
 	OUT_Pending		  := (State = ETransitionState.VALIDATE_TAKEOVER) OR 
-						 (State = EtransitionState.PRE_TAKEOVER); 
+						 (State = ETransitionState.PRE_TAKEOVER); 
 	OUT_PendingReady  := PendingReady; 
 	OUT_Released	  := Released; 
 END_IF
-OUT_FailSafe	  := FALSE;  
+OUT_FailSafe	  := (Active = EControlMode.FAILSAFE);  
 OUT_RejectedRequestFlag := GVL_State.RejectedRequestFlag; 
 //Heartbeat should be visible regardless of mode we're in
 OUT_NoHB_Manual   := NOT HB_Manual_OK; 
@@ -3165,21 +3164,7 @@ OUT_State_Stable := (State = ETransitionState.STABLE);
 OUT_State_Validate := (State = ETransitionState.VALIDATE_TAKEOVER); 
 OUT_State_FailSafe := (State = ETransitionState.FAILSAFE); 
 
-
-(*
-Lamp_RequestManual := ReqManual;
-Lamp_RequestRemote := ReqRemote;
-Lamp_GrantedManual := GrantedManual;
-Lamp_GrantedRemote := GrantedRemote;
-Lamp_Pending := (State = ETransitionState.PENDING_ACK);
-Lamp_ActiveManual := (Active = EControlMode.MANUAL);
-Lamp_ActiveRemote := (Active = EControlMode.REMOTE);
-Lamp_Released := Released;
-Lamp_PendingReady := PendingReady;
-Lamp_Remote_No_HeartBeat := ReqRemote AND (NOT GVL_HeartBeat.HB_Remote_OK);
-Lamp_Manual_No_HeartBeat := ReqManual AND (NOT GVL_HeartBeat.HB_Manual_OK);
-Lamp_FailSafe               := (Active = EControlMode.FAILSAFE);
-*)</xhtml>
+</xhtml>
                   </ST>
                 </body>
                 <addData>
