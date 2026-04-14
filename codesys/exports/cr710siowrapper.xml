@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-14T09:36:45.6694626" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-14T09:36:32.063443" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-14T10:21:23.7337959" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-14T10:21:08.2388724" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2753,27 +2753,21 @@ CASE State OF
 			
 		ELSE
 			Released := FALSE;
-				IF Active = EControlMode.MANUAL THEN
-					Released := RelManual;
-				ELSIF Active = EControlMode.REMOTE THEN
-					Released := RelRemote;
-				ELSIF Active = EControlMode.AUTO THEN
-					Released := RelAuto;
-				ELSIF Active = EControlMode.REMOTE_MOBILE THEN 
-					Released := RelRemoteMobile; 
-				END_IF		
+			CASE Active OF 
+				EControlMode.MANUAL: Released := RelManual; 
+				EControlMode.REMOTE: Released := RelRemote; 
+				EControlMode.AUTO: Released := RelAuto; 
+				EControlMode.REMOTE_MOBILE: Released := RelRemoteMobile; 
+			END_CASE	
 			//ACK from pending station
 			PendingReady := FALSE;
-				IF Pending = EPendingMode.PENDING_MANUAL THEN
-					PendingReady := AckManual;
-				ELSIF Pending = EPendingMode.PENDING_REMOTE THEN
-					PendingReady := AckRemote;
-				ELSIF Pending = EPendingMode.PENDING_AUTO THEN
-					PendingReady := AckAuto;
-				ELSIF Pending = EPendingMode.PENDING_REMOTE_MOBILE THEN 
-					PendingReady := AckRemoteMobile; 
-				END_IF
-			//Penfing får inte matcha Active - om det sker gå till FAILSAFE
+			CASE Pending OF 
+				EPendingMode.PENDING_MANUAL: PendingReady := AckManual; 
+				EPendingMode.PENDING_REMOTE: PendingReady := AckRemote; 
+				EPendingMode.PENDING_AUTO: PendingReady := AckAuto; 
+				EPendingMode.PENDING_REMOTE_MOBILE: PendingReady := AckRemoteMobile; 
+			END_CASE
+			//Pending must never match Active - if so go to failsafe
 			IF (Pending = EPendingMode.PENDING_MANUAL AND Active = EControlMode.MANUAL) OR
 				(Pending = EPendingMode.PENDING_REMOTE AND Active = EControlMode.REMOTE) OR
 				(Pending = EPendingMode.PENDING_AUTO AND Active = EControlMode.AUTO) OR
@@ -2793,15 +2787,12 @@ CASE State OF
 					RETURN;		
 			END_IF
 			IF Released AND PendingReady THEN 
-				IF Pending = EPendingMode.PENDING_MANUAL THEN 
-					Active := EControlMode.MANUAL; 
-				ELSIF Pending = EPendingMode.PENDING_REMOTE THEN 
-					Active := EControlMode.REMOTE; 
-				ELSIF Pending = EPendingMode.PENDING_AUTO THEN
-					Active := EControlMode.AUTO;
-				ELSIF Pending = EPendingMode.PENDING_REMOTE_MOBILE THEN 
-					Active := EControlMode.REMOTE_MOBILE; 
-				END_IF
+				CASE Pending OF
+					EPendingMode.PENDING_MANUAL: Active := EControlMode.MANUAL; 
+					EPendingMode.PENDING_REMOTE: Active := EControlMode.REMOTE; 
+					EPendingMode.PENDING_AUTO: Active := EControlMode.AUTO; 
+					EPendingMode.PENDING_REMOTE_MOBILE: Active := EControlMode.REMOTE_MOBILE; 
+				END_CASE
 				Pending := EPendingMode.NONE; 
 				State := ETransitionState.STABLE; 
 				tAckTimer(IN := FALSE, PT := MaxAckTime); 
