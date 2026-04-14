@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-14T10:21:23.7337959" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-14T10:21:08.2388724" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 6" creationDateTime="2026-04-14T13:33:59.0650764" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-14T13:33:39.2038023" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2595,24 +2595,28 @@ xOk := NOT tonTimeout.Q;
                 </interface>
                 <body>
                   <ST>
-                    <xhtml xmlns="http://www.w3.org/1999/xhtml">
+                    <xhtml xmlns="http://www.w3.org/1999/xhtml">//Detect when a request signal goes from FALSE to TRUE
+//Ensures each request is only processed once per button press
 xReqRemotePulse := ReqRemote AND NOT xReqRemoteOld; 
 xReqManualPulse := ReqManual AND NOT xReqManualOld; 
 xReqAutoPulse := ReqAuto AND NOT xReqAutoOld; 
 xReqRemoteMobilePulse := ReqRemoteMobile AND NOT xreqRemoteMobileOld; 
 
+//Store previous signal state for next scan's edge detection
 xReqRemoteOld := ReqRemote; 
 xReqManualOld := ReqManual; 
 xReqAutoOld := ReqAuto; 
 xReqRemoteMobileOld := ReqRemoteMobile; 
 
+//Safety guard - if active loses heartbeat force FAILSAFE immediately
+//This check runs every scan before the state machine, acting as an interrupt
 IF (Active = EControlMode.REMOTE AND NOT HB_Remote_OK) OR 
 	(Active = EControlMode.MANUAL AND NOT HB_Manual_OK) OR 
 	(Active = EControlMode.AUTO AND NOT HB_Auto_OK) OR 
 	(Active = EControlMode.REMOTE_MOBILE AND NOT HB_Remote_Mobile_OK) THEN
 	Active 	:= EControlMode.FAILSAFE; 
 	Pending := EPendingMode.NONE; 
-	State 	:= ETransitionState.FAILSAFE; // gick från stable -&gt; failsafe annars gpr den till case stabe
+	State 	:= ETransitionState.FAILSAFE; 
 	GrantedManual 		:= FALSE;
 	GrantedRemote 		:= FALSE;
 	GrantedAuto 		:= FALSE;
@@ -2620,7 +2624,8 @@ IF (Active = EControlMode.REMOTE AND NOT HB_Remote_OK) OR
 	RETURN; 
 END_IF 
 
-//Block all signals if IntegrityCheck failed
+//Safety guard - if IntegrityCheck detected invalid signal combination force FAILSAFE
+//Prevents corrupted or contradictiory signals from reaching decision logic
 IF NOT Valid THEN
 	Active 			:=  EControlMode.FAILSAFE;
 	Pending 		:= EPendingMode.NONE;
@@ -2636,8 +2641,12 @@ IF NOT Valid THEN
 	RejectionReason := 'FAILSAFE: INVALID_SIGNAL';
 	RETURN;	
 END_IF
+
+//Main state machine - contrls transitions between control stations
+//States: INIT -&gt; STABLE &lt;-&gt; PRE_TAKEOVER &lt;-&gt; VALIDATE_TAKEOVER, any state -&gt; FAILSAFE
 CASE State OF
-	//väntar på första request 
+	//INIT - system startup, waiting for the first valid request
+	//System remains here until a station with valid heartbeat requests control 
 	ETransitionState.INIT:
 		IF xReqManualPulse AND HB_Manual_OK THEN
             Active := EControlMode.MANUAL;
@@ -2651,20 +2660,27 @@ CASE State OF
 		ELSIF xReqRemoteMobilePulse AND HB_Remote_Mobile_OK THEN 
 			Active := EControlMode.REMOTE_MOBILE; 
 			State := ETransitionState.STABLE; 
-        END_IF //ingen -&gt; stannar i init tills någon tar kontroll
-		
+        END_IF 
+	
+	// FAILSAFE - terminal error state, no transitions allowed
+	// Entered when heartbeat is lost, signals are invalid or internal inconsistency detected
+	//Requires manual intervention to recover	
 	ETransitionState.FAILSAFE:
 		Pending       	:= EPendingMode.NONE;
 		PendingReady	:= FALSE;
 		Released 		:= FALSE;
 		tAckTimer(IN := FALSE, PT := MaxAckTime);
-		
+	
+	//STABLE - normal operating state, one station is active, no transition in progress
+	// Resets rejection flags and waits for a new takeover request	
 	ETransitionState.STABLE: 
-		Pending := EPendingMode.NONE; //No one is trying to take over
+		Pending := EPendingMode.NONE; 
 		tAckTimer(IN := FALSE, PT := MaxAckTime);
 		RejectedRequestFlag := FALSE; 
 		RejectionReason := ''; 
 		
+		//Priority order dor simultaneius requests: MANUAL &gt; REMOTE &gt; AUTO &gt; REMOTE_MOBILE
+		//Documented in ADR-X - simultaneous requests from different stations
 		IF xReqManualPulse THEN 
 			xPendingManualLatch := TRUE; 
 			State := ETransitionState.PRE_TAKEOVER; 
@@ -2679,6 +2695,9 @@ CASE State OF
 			State := ETransitionState.PRE_TAKEOVER; 
 		END_IF
 	
+	//PRE_TAKEOVER - validates wheter a takover request can proceed
+	//Checks that requesting station is not already active and has valid heartbeat
+	//Rejected request are logged with reason
 	ETransitionState.PRE_TAKEOVER:	
 		IF xPendingManualLatch AND Active &lt;&gt; EControlMode.MANUAL AND HB_Manual_OK THEN 
 			Pending := EPendingMode.PENDING_MANUAL; 
@@ -2693,6 +2712,7 @@ CASE State OF
 			Pending := EPendingMode.PENDING_REMOTE_MOBILE; 
 			State	:= ETransitionState.VALIDATE_TAKEOVER; 
 		ELSE 
+			//Request rejected - log reason for decision logger
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
 			RejectedRequestFlag := TRUE; 
@@ -2710,6 +2730,8 @@ CASE State OF
 					RejectionReason := 'Request rejected: Conflicting request'; 
 			END_IF
 		END_IF
+		
+		//Clear all latches regardless of outcome - each request is only evaluated once
 		xPendingManualLatch := FALSE; 
 		xPendingRemoteLatch := FALSE; 
 		xPendingAutoLatch 	:= FALSE;
@@ -2726,10 +2748,13 @@ CASE State OF
 			//State := ETransitionState.PENDING_ACK; 
 		//END_IF
 	
-	//Transition has been granted, waiting for acknowledgement from both control modes
+	//VALIDATE_TAKEOVER - handshake phase, waiting for release from active and ack from pending
+	//Transition completes when active station releases and pending station acknowledges
+	//Aborted if heartbeat is lost or acknowledgement timer expires
 	ETransitionState.VALIDATE_TAKEOVER: 
 		tAckTimer(IN := TRUE, PT := MaxAckTime); 
 		
+		//Stop transition if the new station loses connection or cancels its request
 		IF (Pending = EPendingMode.PENDING_MANUAL AND (NOT ReqManual OR NOT HB_Manual_OK)) OR
 			(Pending = EPendingMode.PENDING_REMOTE AND (NOT ReqRemote OR NOT HB_Remote_OK)) OR 
 			(Pending = EPendingMode.PENDING_AUTO AND (NOT ReqAuto OR NOT HB_Auto_OK)) OR 
@@ -2741,7 +2766,8 @@ CASE State OF
 			Released := FALSE;
 			RejectedRequestFlag := TRUE; 
 			RejectionReason := 'Request rejected: Heartbeat loss during handover'; 
-			
+		
+		//Abort - pending station did not acknowledge within allowed time
 		ELSIF tAckTimer.Q THEN 
 			Pending := EPendingMode.NONE; 
 			State := ETransitionState.STABLE; 
@@ -2752,6 +2778,7 @@ CASE State OF
 			RejectionReason := 'Request rejected: acknowledgement timeout'; 
 			
 		ELSE
+			//Read release signal from active station
 			Released := FALSE;
 			CASE Active OF 
 				EControlMode.MANUAL: Released := RelManual; 
@@ -2759,7 +2786,8 @@ CASE State OF
 				EControlMode.AUTO: Released := RelAuto; 
 				EControlMode.REMOTE_MOBILE: Released := RelRemoteMobile; 
 			END_CASE	
-			//ACK from pending station
+			
+			//Read acknowledgement from pending station
 			PendingReady := FALSE;
 			CASE Pending OF 
 				EPendingMode.PENDING_MANUAL: PendingReady := AckManual; 
@@ -2767,7 +2795,9 @@ CASE State OF
 				EPendingMode.PENDING_AUTO: PendingReady := AckAuto; 
 				EPendingMode.PENDING_REMOTE_MOBILE: PendingReady := AckRemoteMobile; 
 			END_CASE
-			//Pending must never match Active - if so go to failsafe
+
+			//Safety check: the new station must not be the same as the current one
+			//PRE_TAKEOVER prevents this, but if reached here it indicates internal fault
 			IF (Pending = EPendingMode.PENDING_MANUAL AND Active = EControlMode.MANUAL) OR
 				(Pending = EPendingMode.PENDING_REMOTE AND Active = EControlMode.REMOTE) OR
 				(Pending = EPendingMode.PENDING_AUTO AND Active = EControlMode.AUTO) OR
@@ -2786,6 +2816,8 @@ CASE State OF
 					RejectionReason := 'Request rejected: Integrity violation, pending matches active';
 					RETURN;		
 			END_IF
+			
+			//Complete transition - both conditions met
 			IF Released AND PendingReady THEN 
 				CASE Pending OF
 					EPendingMode.PENDING_MANUAL: Active := EControlMode.MANUAL; 
@@ -2802,8 +2834,8 @@ CASE State OF
 	END_IF
 END_CASE
 
-
-//Updated grant signals based on the current pending mode 
+//Grant signals - updated each scan based on current pending mode
+//Stations use these to know their request has been approved
 GrantedManual := (Pending = EPendingMode.PENDING_MANUAL);
 GrantedRemote := (Pending = EPendingMode.PENDING_REMOTE);
 GrantedAuto   := (Pending = EPendingMode.PENDING_AUTO);
