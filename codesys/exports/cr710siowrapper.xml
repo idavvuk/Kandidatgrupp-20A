@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-15T23:51:38.163431" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-15T23:51:27.8134047" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-15T23:57:15.5059578" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-15T23:56:55.9076669" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2034,10 +2034,10 @@ fbInputProcessing(
 	
 );
 
-fbHB_Manual(xSignal := GVL_HeartBeat.HB_Manual_Signal); 
-fbHB_Remote(xSignal := GVL_HeartBeat.HB_Remote_Signal); 
-fbHB_Auto(xSignal 	:= GVL_HeartBeat.HB_Auto_Signal);
-fbHB_Remote_Mobile(xSignal := GVL_HeartBeat.HB_Remote_Mobile_Signal); 
+fbHB_Manual(xSignal        := fbInputProcessing.HB_Manual_Signal);
+fbHB_Remote(xSignal        := fbInputProcessing.HB_Remote_Signal);
+fbHB_Auto(xSignal          := fbInputProcessing.HB_Auto_Signal);
+fbHB_Remote_Mobile(xSignal := fbInputProcessing.HB_Remote_Mobile_Signal);
 
 //Heartbeat generator
 fbHBGen_Manual(); 
@@ -2086,10 +2086,10 @@ fbControlUnit(
 );
 
 fbOutputProcessing(
-    ReqManual       := GVL_IO.ReqManual,
-    ReqRemote       := GVL_IO.ReqRemote,
-	ReqAuto	        := GVL_IO.ReqAuto,
-	ReqRemoteMobile := GVL_IO.ReqRemoteMobile,
+    ReqManual       := fbInputProcessing.ReqManual,
+    ReqRemote       := fbInputProcessing.ReqRemote,
+	ReqAuto	        := fbInputProcessing.ReqAuto,
+	ReqRemoteMobile := fbInputProcessing.ReqRemoteMobile,
     GrantedManual   := fbControlUnit.GrantedManual,
     GrantedRemote   := fbControlUnit.GrantedRemote,
 	GrantedAuto	    := fbControlUnit.GrantedAuto,
@@ -2113,15 +2113,14 @@ fbDecisionLogger(
 	
 ); 
 	
-OUT0000.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_GrantedManual, 0, 2500);
-OUT0001.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_GrantedRemote, 0, 2500);
-OUT0002.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_ActiveManual, 0, 2500);
-OUT0003.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_ActiveRemote, 0, 2500);
-OUT0004.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_Pending, 0, 2500);
-OUT0005.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_FailSafe, 0, 2500);
-
-OUT0006.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_GrantedAuto, 0, 2500);
-OUT0007.VAR_IN.uiValue := SEL(fbOutputProcessing.Out_ActiveAuto, 0, 2500);
+OUT0000.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_GrantedManual, 0, 2500);
+OUT0001.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_GrantedRemote, 0, 2500);
+OUT0002.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_ActiveManual, 0, 2500);
+OUT0003.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_ActiveRemote, 0, 2500);
+OUT0004.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_Pending, 0, 2500);
+OUT0005.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_FailSafe, 0, 2500);
+OUT0006.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_GrantedAuto, 0, 2500);
+OUT0007.VAR_IN.uiValue := SEL(fbOutputProcessing.OUT_ActiveAuto, 0, 2500);
 
 IOWrapper.WRITE_OUTPUTS();	//Call IOWrapper Main Program and Write Data to Outputs 
 
@@ -2671,7 +2670,7 @@ xOk := NOT tonTimeout.Q;
 xReqRemotePulse := ReqRemote AND NOT xReqRemoteOld; 
 xReqManualPulse := ReqManual AND NOT xReqManualOld; 
 xReqAutoPulse := ReqAuto AND NOT xReqAutoOld; 
-xReqRemoteMobilePulse := ReqRemoteMobile AND NOT xreqRemoteMobileOld; 
+xReqRemoteMobilePulse := ReqRemoteMobile AND NOT xReqRemoteMobileOld; 
 
 //Store previous signal state for next scan's edge detection
 xReqRemoteOld := ReqRemote; 
