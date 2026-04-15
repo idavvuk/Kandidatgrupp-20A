@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-14T14:52:50.8280121" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-14T14:52:31.3740999" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-15T14:57:57.8455753" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-15T14:57:45.1195138" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -2067,7 +2067,8 @@ fbControlUnit(
 	HB_Manual_OK 	:= GVL_HeartBeat.HB_Manual_OK,
 	HB_Remote_OK 	:= GVL_HeartBeat.HB_Remote_OK,
 	HB_Auto_OK		:= GVL_HeartBeat.HB_Auto_OK, 
-	HB_Remote_Mobile_OK := GVL_HeartBeat.HB_Remote_Mobile_OK
+	HB_Remote_Mobile_OK := GVL_HeartBeat.HB_Remote_Mobile_OK,
+	Valid := fbIntegrityCheck.Valid
 );
 
 fbOutputProcessing(
@@ -2365,6 +2366,11 @@ xOk := NOT tonTimeout.Q;
               <pou name="ControlUnit" pouType="functionBlock">
                 <interface>
                   <inputVars>
+                    <variable name="Valid">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
                     <variable name="ReqManual">
                       <type>
                         <BOOL />
@@ -2478,11 +2484,6 @@ xOk := NOT tonTimeout.Q;
                     </variable>
                   </inputVars>
                   <outputVars>
-                    <variable name="Valid">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
                     <variable name="Active">
                       <type>
                         <derived name="EControlMode" />
