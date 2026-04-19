@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project xmlns="http://www.plcopen.org/xml/tc6_0200">
-  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-15T23:57:15.5059578" />
-  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-15T23:56:55.9076669" organization="ifm electronic">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP11 Patch 5" creationDateTime="2026-04-19T11:03:33.5240873" />
+  <contentHeader name="ifmCR711S_TemplateProject" version="2.4.10.0" modificationDateTime="2026-04-19T11:03:19.6124676" organization="ifm electronic">
     <Comment>Project template with CR711S configured 2.25MByte Standard 2.25MByte Safety</Comment>
     <coordinateInfo>
       <fbd>
@@ -41,7 +41,7 @@
                 <DeviceIdentification>
                   <Type>4096</Type>
                   <Id>1063 0313</Id>
-                  <Version>3.2.0.0</Version>
+                  <Version>3.0.0.2</Version>
                 </DeviceIdentification>
                 <Connector moduleType="5000" interface="3S:Internal" connectorId="1">
                   <HostParameterSet />
@@ -2015,9 +2015,9 @@ Current margin: 300ms - adjust both if either value changes</xhtml>
 IOWrapper.READ_INPUTS(); 	//Call IOWrapper Main Program and Read Data from Inputs   
 
 fbInputProcessing(
-	xReqManual 			:= IN0100.VAR_OUT.xValueDigital,
-	xAckManual 			:= IN0101.VAR_OUT.xValueDigital, 
-	xRelManual 			:= IN0102.VAR_OUT.xValueDigital, 
+	xReqManual 			:= GVL_IO.ReqManual,
+	xAckManual 			:= GVL_IO.AckManual, 
+	xRelManual 			:= GVL_IO.RelManual, 
 	xHB_Manual			:= IN0103.VAR_OUT.xValueDigital, 
 	xReqRemote			:= GVL_IO.ReqRemote, 
 	xAckRemote			:= GVL_IO.AckRemote, 
@@ -2034,10 +2034,17 @@ fbInputProcessing(
 	
 );
 
-fbHB_Manual(xSignal        := fbInputProcessing.HB_Manual_Signal);
-fbHB_Remote(xSignal        := fbInputProcessing.HB_Remote_Signal);
-fbHB_Auto(xSignal          := fbInputProcessing.HB_Auto_Signal);
-fbHB_Remote_Mobile(xSignal := fbInputProcessing.HB_Remote_Mobile_Signal);
+fbHB_Manual(xSignal        := fbHBGen_Manual.xSignal);
+fbHB_Remote(xSignal        := fbHBGen_Remote.xSignal);
+fbHB_Auto(xSignal          := fbHBGen_Auto.xSignal);
+fbHB_Remote_Mobile(xSignal := fbHBGen_Remote_Mobile.xSignal);
+
+
+//NEWWWW
+GVL_HeartBeat.HB_Manual_OK := fbHB_Manual.xOk;
+GVL_HeartBeat.HB_Remote_OK := fbHB_Remote.xOk;
+GVL_HeartBeat.HB_Auto_OK   := fbHB_Auto.xOk;
+GVL_HeartBeat.HB_Remote_Mobile_OK := fbHB_Remote_Mobile.xOk;
 
 //Heartbeat generator
 fbHBGen_Manual(); 
@@ -2082,7 +2089,8 @@ fbControlUnit(
 	HB_Remote_OK 	:= GVL_HeartBeat.HB_Remote_OK,
 	HB_Auto_OK		:= GVL_HeartBeat.HB_Auto_OK, 
 	HB_Remote_Mobile_OK := GVL_HeartBeat.HB_Remote_Mobile_OK,
-	Valid := fbIntegrityCheck.Valid
+	Valid := fbIntegrityCheck.Valid,
+	MaxAckTime := T#10S
 );
 
 fbOutputProcessing(
@@ -2533,6 +2541,26 @@ xOk := NOT tonTimeout.Q;
                         <derived name="ETransitionState" />
                       </type>
                     </variable>
+                    <variable name="Released">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="PendingReady">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RejectedRequestFlag">
+                      <type>
+                        <BOOL />
+                      </type>
+                    </variable>
+                    <variable name="RejectionReason">
+                      <type>
+                        <string />
+                      </type>
+                    </variable>
                   </outputVars>
                   <localVars>
                     <variable name="Pending">
@@ -2609,16 +2637,6 @@ xOk := NOT tonTimeout.Q;
                         <simpleValue value="FALSE" />
                       </initialValue>
                     </variable>
-                    <variable name="Released">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="PendingReady">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
                     <variable name="xPendingManualLatch">
                       <type>
                         <BOOL />
@@ -2650,16 +2668,6 @@ xOk := NOT tonTimeout.Q;
                       <initialValue>
                         <simpleValue value="FALSE" />
                       </initialValue>
-                    </variable>
-                    <variable name="RejectedRequestFlag">
-                      <type>
-                        <BOOL />
-                      </type>
-                    </variable>
-                    <variable name="RejectionReason">
-                      <type>
-                        <string />
-                      </type>
                     </variable>
                   </localVars>
                 </interface>
@@ -3741,7 +3749,7 @@ HB_Remote_Mobile_Out := HB_Remote_Mobile_Signal; </xhtml>
 		GVL_State.LastActiveBeforeTransition := LastActive;
 END_IF
 IF Active &lt;&gt; LastActive OR Pending &lt;&gt; LastPending OR State &lt;&gt; LastState THEN 
-	SysTimeRtc.SysTimeRtcGet(GVL_State.TimeStamp);
+	//SysTimeRtc.SysTimeRtcGet(GVL_State.TimeStamp);
 	GVL_State.Active := Active; 
 	GVL_State.Pending := Pending; 
 	GVL_State.State := State;
@@ -3779,7 +3787,7 @@ LastRejectedRequest := RejectedRequestFlag;
                 <DeviceIdentification>
                   <Type>4096</Type>
                   <Id>1063 0315</Id>
-                  <Version>3.2.0.0</Version>
+                  <Version>3.0.0.2</Version>
                 </DeviceIdentification>
                 <Connector moduleType="40000" interface="ifm:SystemR360III" connectorId="1">
                   <HostParameterSet />
@@ -3798,7 +3806,7 @@ LastRejectedRequest := RejectedRequestFlag;
                         <ModuleIdentification>
                           <Type>4096</Type>
                           <Id>1063 0315</Id>
-                          <Version>3.2.0.0</Version>
+                          <Version>3.0.0.2</Version>
                           <ModuleId>50004</ModuleId>
                         </ModuleIdentification>
                         <Connector moduleType="42000" interface="ifm:SystemR360III_IO" connectorId="5" hostpath="104">
@@ -3821,7 +3829,7 @@ LastRejectedRequest := RejectedRequestFlag;
                                 <ModuleIdentification>
                                   <Type>4096</Type>
                                   <Id>1063 0315</Id>
-                                  <Version>3.2.0.0</Version>
+                                  <Version>3.0.0.2</Version>
                                   <ModuleId>50005</ModuleId>
                                 </ModuleIdentification>
                                 <Connector moduleType="52100" role="child" interface="ifm:SystemR360III_IO" connectorId="105">
@@ -4127,7 +4135,7 @@ LastRejectedRequest := RejectedRequestFlag;
                                 <ModuleIdentification>
                                   <Type>4096</Type>
                                   <Id>1063 0315</Id>
-                                  <Version>3.2.0.0</Version>
+                                  <Version>3.0.0.2</Version>
                                   <ModuleId>50006</ModuleId>
                                 </ModuleIdentification>
                                 <Connector moduleType="52200" role="child" interface="ifm:SystemR360III_IO" connectorId="106">
@@ -4544,7 +4552,7 @@ LastRejectedRequest := RejectedRequestFlag;
                                 <ModuleIdentification>
                                   <Type>4096</Type>
                                   <Id>1063 0315</Id>
-                                  <Version>3.2.0.0</Version>
+                                  <Version>3.0.0.2</Version>
                                   <ModuleId>50007</ModuleId>
                                 </ModuleIdentification>
                                 <Connector moduleType="52300" role="child" interface="ifm:SystemR360III_IO" connectorId="107">
@@ -4640,7 +4648,7 @@ LastRejectedRequest := RejectedRequestFlag;
                                 <ModuleIdentification>
                                   <Type>4096</Type>
                                   <Id>1063 0315</Id>
-                                  <Version>3.2.0.0</Version>
+                                  <Version>3.0.0.2</Version>
                                   <ModuleId>50008</ModuleId>
                                 </ModuleIdentification>
                                 <Connector moduleType="52400" role="child" interface="ifm:SystemR360III_IO" connectorId="108">
@@ -4750,7 +4758,7 @@ LastRejectedRequest := RejectedRequestFlag;
                         <ModuleIdentification>
                           <Type>4096</Type>
                           <Id>1063 0315</Id>
-                          <Version>3.2.0.0</Version>
+                          <Version>3.0.0.2</Version>
                           <ModuleId>50011</ModuleId>
                         </ModuleIdentification>
                         <Connector moduleType="43000" interface="ifm:SystemR360III_HMI" connectorId="12" hostpath="111">
@@ -4773,7 +4781,7 @@ LastRejectedRequest := RejectedRequestFlag;
                                 <ModuleIdentification>
                                   <Type>4096</Type>
                                   <Id>1063 0315</Id>
-                                  <Version>3.2.0.0</Version>
+                                  <Version>3.0.0.2</Version>
                                   <ModuleId>50012</ModuleId>
                                 </ModuleIdentification>
                                 <Connector moduleType="53100" role="child" interface="ifm:SystemR360III_HMI" connectorId="112">
@@ -4888,7 +4896,7 @@ LastRejectedRequest := RejectedRequestFlag;
                         <ModuleIdentification>
                           <Type>4096</Type>
                           <Id>1063 0315</Id>
-                          <Version>3.2.0.0</Version>
+                          <Version>3.0.0.2</Version>
                           <ModuleId>50039</ModuleId>
                         </ModuleIdentification>
                         <Connector moduleType="44000" interface="ifm:SystemR360III_COMM" connectorId="40" hostpath="139">
@@ -4911,7 +4919,7 @@ LastRejectedRequest := RejectedRequestFlag;
                                 <ModuleIdentification>
                                   <Type>4096</Type>
                                   <Id>1063 0315</Id>
-                                  <Version>3.2.0.0</Version>
+                                  <Version>3.0.0.2</Version>
                                   <ModuleId>50040</ModuleId>
                                 </ModuleIdentification>
                                 <Connector moduleType="64001" interface="ifm:globalEthernet" connectorId="41" hostpath="140">
@@ -4937,7 +4945,7 @@ LastRejectedRequest := RejectedRequestFlag;
                                 <ModuleIdentification>
                                   <Type>4096</Type>
                                   <Id>1063 0315</Id>
-                                  <Version>3.2.0.0</Version>
+                                  <Version>3.0.0.2</Version>
                                   <ModuleId>50041</ModuleId>
                                 </ModuleIdentification>
                                 <Connector moduleType="64002" interface="ifm:globalCAN" connectorId="42" hostpath="141">
